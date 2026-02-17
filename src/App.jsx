@@ -9,11 +9,42 @@ import {
 const App = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [favorites, setFavorites] = useState([]);
-  const [tested, setTested] = useState([]); // État pour les jeux testés
   const [filterType, setFilterType] = useState('Tous');
   
-  const [customGames, setCustomGames] = useState([]);
+  // --- ÉTATS AVEC PERSISTANCE (localStorage) ---
+
+  // 1. Charger/Sauvegarder les FAVORIS
+  const [favorites, setFavorites] = useState(() => {
+    const saved = localStorage.getItem('fij2026_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fij2026_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // 2. Charger/Sauvegarder les JEUX TESTÉS
+  const [tested, setTested] = useState(() => {
+    const saved = localStorage.getItem('fij2026_tested');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fij2026_tested', JSON.stringify(tested));
+  }, [tested]);
+
+  // 3. Charger/Sauvegarder les JEUX PERSONNALISÉS (Ajoutés/Modifiés)
+  const [customGames, setCustomGames] = useState(() => {
+    const saved = localStorage.getItem('fij2026_customGames');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem('fij2026_customGames', JSON.stringify(customGames));
+  }, [customGames]);
+
+  // --- FIN PERSISTANCE ---
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingGameId, setEditingGameId] = useState(null);
 
@@ -54,11 +85,10 @@ const App = () => {
                           normalizeText(g.stand).includes(term);
       const matchFilter = filterType === "Tous" || g.type === filterType;
       
-      // LOGIQUE DES ONGLETS
       if (activeTab === 'asdor') return matchSearch && matchFilter && g.category === "As d'Or";
       if (activeTab === 'news') return matchSearch && matchFilter && g.category === "Nouveauté";
       if (activeTab === 'mylist') return matchSearch && favorites.includes(g.id);
-      if (activeTab === 'tested') return matchSearch && tested.includes(g.id); // NOUVEAU FILTRE TESTÉS
+      if (activeTab === 'tested') return matchSearch && tested.includes(g.id);
       
       return matchSearch && matchFilter;
     });
@@ -123,7 +153,7 @@ const App = () => {
               { id: 'all', label: 'Catalogue', icon: Package }, 
               { id: 'asdor', label: "As d'Or", icon: Trophy }, 
               { id: 'mylist', label: 'Ma Liste', icon: Heart },
-              { id: 'tested', label: 'Testés', icon: CheckCircle2 } // NOUVEL ONGLET
+              { id: 'tested', label: 'Testés', icon: CheckCircle2 }
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 pb-2 border-b-2 font-black text-xs uppercase transition-all whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'}`}><tab.icon size={14} />{tab.label}</button>
             ))}
