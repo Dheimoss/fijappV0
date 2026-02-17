@@ -1,419 +1,216 @@
-import React, { useState, useMemo, useEffect } from 'react';
-
-import { initialGames } from './gamesData';
-
-import { 
-
-  Heart, MapPin, Trophy, Star, Search, 
-
-  Package, Layers, X, Plus, 
-
-  Clock, Users, PenTool, ChevronLeft, Edit2 
-
-} from 'lucide-react';
-
-
-
-const App = () => {
-
-  const [activeTab, setActiveTab] = useState('all');
-
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const [favorites, setFavorites] = useState([]);
-
-  const [filterType, setFilterType] = useState('Tous');
-
-  
-
-  const [customGames, setCustomGames] = useState([]);
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const [editingGameId, setEditingGameId] = useState(null);
-
-
-
-  const emptyGame = {
-
-    title: '', publisher: '', author: '', stand: '', type: 'Tout Public',
-
-    description: '', players: '', duration: ''
-
-  };
-
-
-
-  const [newGame, setNewGame] = useState(emptyGame);
-
-
-
-  useEffect(() => {
-
-    if (!document.getElementById('tailwindcss-cdn')) {
-
-      const script = document.createElement('script');
-
-      script.id = 'tailwindcss-cdn';
-
-      script.src = 'https://cdn.tailwindcss.com';
-
-      document.head.appendChild(script);
-
-    }
-
-  }, []);
-
-
-
-  const normalizeText = (text) => 
-
-    (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-
-
-  const allGames = useMemo(() => {
-
-    const baseWithEdits = initialGames.map(bg => {
-
-      const edited = customGames.find(cg => cg.id === bg.id);
-
-      return edited || bg;
-
-    });
-
-    const trulyNew = customGames.filter(cg => !initialGames.find(bg => bg.id === cg.id));
-
-    return [...baseWithEdits, ...trulyNew];
-
-  }, [customGames]);
-
-
-
-  const filteredGames = useMemo(() => {
-
-    const term = normalizeText(searchTerm);
-
-    return allGames.filter(g => {
-
-      const matchSearch = normalizeText(g.title).includes(term) || 
-
-                          normalizeText(g.publisher).includes(term) ||
-
-                          normalizeText(g.author).includes(term) ||
-
-                          normalizeText(g.stand).includes(term);
-
-      const matchFilter = filterType === "Tous" || g.type === filterType;
-
-      
-
-      if (activeTab === 'asdor') return matchSearch && matchFilter && g.category === "As d'Or";
-
-      if (activeTab === 'news') return matchSearch && matchFilter && g.category === "Nouveauté";
-
-      if (activeTab === 'mylist') return matchSearch && favorites.includes(g.id);
-
-      return matchSearch && matchFilter;
-
-    });
-
-  }, [searchTerm, activeTab, favorites, filterType, allGames]);
-
-
-
-  const openEditModal = (game, e) => {
-
-    e.stopPropagation();
-
-    setNewGame({...game});
-
-    setEditingGameId(game.id);
-
-    setIsModalOpen(true);
-
-  };
-
-
-
-const handleSaveGame = (e) => {
-
-  e.preventDefault();
-
-  if (!newGame.title) return;
-
-
-
-  const gameToSave = { 
-
-    ...newGame, 
-
-    id: editingGameId || `custom-${Date.now()}`, 
-
-    category: editingGameId ? newGame.category : 'Perso' 
-
-  };
-
-
-
-  if (editingGameId) {
-
-    setCustomGames(prev => prev.map(g => g.id === editingGameId ? gameToSave : g));
-
-  } else {
-
-    setCustomGames(prev => [gameToSave, ...prev]);
-
-  }
-
-  
-
-  setIsModalOpen(false);
-
-  setEditingGameId(null);
-
-  setNewGame(emptyGame);
-
-};
-
-
-
-  return (
-
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-32 font-sans selection:bg-indigo-100">
-
-      <header className="bg-white border-b sticky top-0 z-50 px-4 py-4 shadow-sm">
-
-        <div className="max-w-7xl mx-auto">
-
-          <div className="flex items-center justify-between mb-4">
-
-            <div className="flex items-center gap-3">
-
-              <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg"><Layers size={24} /></div>
-
-              <div>
-
-                <h1 className="text-xl font-black uppercase tracking-tighter leading-none">FIJ CANNES <span className="text-indigo-600">2026</span></h1>
-
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{allGames.length} Jeux</p>
-
-              </div>
-
-            </div>
-
-            <button onClick={() => { setEditingGameId(null); setNewGame(emptyGame); setIsModalOpen(true); }} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95">
-
-              <Plus size={20} /><span className="hidden sm:inline text-xs font-black uppercase">Ajouter</span>
-
-            </button>
-
-          </div>
-
-
-
-          <div className="relative mb-4">
-
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-
-            <input type="text" placeholder="Rechercher..." className="w-full pl-11 pr-4 py-3 bg-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-50 transition-all shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-
-          </div>
-
-
-
-          <div className="flex gap-6 overflow-x-auto no-scrollbar pt-1">
-
-            {[{ id: 'all', label: 'Catalogue', icon: Package }, { id: 'asdor', label: "As d'Or", icon: Trophy }, { id: 'mylist', label: 'Ma Liste', icon: Heart }].map(tab => (
-
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 pb-2 border-b-2 font-black text-xs uppercase transition-all whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'}`}><tab.icon size={14} />{tab.label}</button>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </header>
-
-
-
-      <main className="max-w-7xl mx-auto px-4 py-6">
-
-        <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar justify-center">
-
-          {["Tous", "Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"].map(t => (
-
-            <button key={t} onClick={() => setFilterType(t)} className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all ${filterType === t ? 'bg-slate-900 text-white border-slate-900 shadow-md' : 'bg-white text-slate-500 border-slate-200'}`}>{t}</button>
-
-          ))}
-
-        </div>
-
-
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-
-          {filteredGames.map(game => (
-
-            <div key={game.id} className="bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl transition-all relative">
-
-              <div className="flex justify-between items-start mb-3">
-
-                <div className="flex-1">
-
-                  <h3 className="font-black text-lg leading-tight mb-1">{game.title}</h3>
-
-                  <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate"><PenTool size={12} /> {game.author || "Anonyme"}</div>
-
-                </div>
-
-                <div className="flex gap-2">
-
-                  <button onClick={() => setFavorites(prev => prev.includes(game.id) ? prev.filter(f => f !== game.id) : [...prev, game.id])} className={`p-2 rounded-full transition-all ${favorites.includes(game.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300 hover:text-red-400'}`}>
-
-                    <Heart size={18} fill={favorites.includes(game.id) ? "currentColor" : "none"} />
-
-                  </button>
-
-                  <button onClick={(e) => openEditModal(game, e)} className="p-2 rounded-full bg-slate-50 text-slate-300 hover:text-indigo-600 transition-all">
-
-                    <Edit2 size={18} />
-
-                  </button>
-
-                </div>
-
-              </div>
-
-              
-
-              <p className="text-slate-500 text-xs line-clamp-3 italic mb-4 leading-relaxed">"{game.description}"</p>
-
-              
-
-              <div className="mt-auto pt-4 border-t flex justify-between items-center">
-
-                <div className="flex flex-col">
-
-                  <span className="text-indigo-600 font-black text-[11px] uppercase tracking-widest truncate max-w-[120px]">{game.publisher}</span>
-
-                  <span className="text-amber-600 font-bold text-[10px] flex items-center gap-1 uppercase tracking-tighter"><MapPin size={10}/> Stand {game.stand}</span>
-
-                </div>
-
-                <div className="flex gap-2 text-slate-400 text-[10px] font-bold uppercase"><Users size={14}/> {game.players}</div>
-
-              </div>
-
-            </div>
-
-          ))}
-
-        </div>
-
-      </main>
-
-
-
-      {isModalOpen && (
-
-        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-indigo-950/40 backdrop-blur-sm">
-
-          <div className="bg-white w-full max-w-md rounded-t-[2rem] md:rounded-[1.5rem] shadow-2xl flex flex-col">
-
-            <div className="px-6 py-5 bg-indigo-600 text-white flex justify-between items-center shrink-0">
-
-              <h3 className="text-lg font-black uppercase tracking-tight">{editingGameId ? "Modifier" : "Nouveau Jeu"}</h3>
-
-              <button onClick={() => setIsModalOpen(false)} className="bg-white/10 p-2 rounded-full hover:bg-white/20"><X size={20} /></button>
-
-            </div>
-
-            <form onSubmit={handleSaveGame} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-
-              <div>
-
-                <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Titre *</label>
-
-                <input required className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" value={newGame.title} onChange={e => setNewGame({...newGame, title: e.target.value})} />
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-
-                <div>
-
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Auteur</label>
-
-                  <input className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" value={newGame.author} onChange={e => setNewGame({...newGame, author: e.target.value})} />
-
-                </div>
-
-                <div>
-
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Stand</label>
-
-                  <input className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" value={newGame.stand} onChange={e => setNewGame({...newGame, stand: e.target.value})} />
-
-                </div>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-
-                <div>
-
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Éditeur</label>
-
-                  <input className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" value={newGame.publisher} onChange={e => setNewGame({...newGame, publisher: e.target.value})} />
-
-                </div>
-
-                <div>
-
-                  <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Joueurs</label>
-
-                  <input className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="2-4" value={newGame.players} onChange={e => setNewGame({...newGame, players: e.target.value})} />
-
-                </div>
-
-              </div>
-
-              <div>
-
-                <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Description</label>
-
-                <textarea className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none h-24 resize-none focus:ring-2 focus:ring-indigo-500" value={newGame.description} onChange={e => setNewGame({...newGame, description: e.target.value})} />
-
-              </div>
-
-              <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95">
-
-                {editingGameId ? "Mettre à jour" : "Ajouter au catalogue"}
-
-              </button>
-
-            </form>
-
-          </div>
-
-        </div>
-
-      )}
-
-      <style>{`.no-scrollbar::-webkit-scrollbar { display: none; }`}</style>
-
-    </div>
-
-  );
-
-};
-
-
-
-export default App;
-
-
-
-Repart de ce code et ajoute la durée à
+// 1. RÉFÉRENTIELS
+const CAT = ["Catalogue", "Nouveauté", "As d'Or", "Perso"];
+const TYPE = ["Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"];
+
+// 2. DATA BRUTE (Format: ID, Titre, CatIndex, TypeIndex, Editeur, Auteur, Stand, Joueurs, Temps, Description)
+const rawGames = [
+  // --- AS D'OR 2025 & INCONTOURNABLES ---
+  [1, "Flip 7", 2, 4, "Catch Up Games", "Eric S. Burgess", "10.01", "3-8", "20 min", "Le stop-ou-encore phénomène."],
+  [2, "Rebirth", 1, 1, "Lucky Duck Games", "Reiner Knizia", "05.01", "2-4", "45 min", "Majorité et territoire."],
+  [3, "Toy Battle", 1, 5, "Repos Production", "Mori & Zucchini", "09.01", "2", "20 min", "Affrontement de jouets."],
+  [4, "Archeo", 1, 3, "Gigamic", "Yohan Servais", "20.02", "1-5", "20 min", "Fouilles coopératives."],
+  [5, "L'Île des Mookies", 1, 3, "Le Scorpion Masqué", "M. & W. Fort", "14.06", "2-5", "15 min", "Mémoire pour petits."],
+  [6, "La Valse des Fantômes", 1, 3, "Schmidt Spiele", "Steffen Bogen", "19.06", "1-4", "20 min", "Parcours magnétique."],
+  [7, "First Rat", 0, 1, "Pegasus / Tribuo", "Ausiello & Gigli", "13.01", "1-5", "60 min", "Rats astronautes."],
+  [8, "Take Time", 1, 1, "Libellud", "Loïc Lamy", "18.03", "2-4", "30 min", "Gestion du temps."],
+  [9, "Zenith", 1, 1, "Playpunk", "Bauza & Maublanc", "16.01", "2-4", "30 min", "Contrôle spatial."],
+  [10, "Arcs", 2, 2, "Leder / Matagot", "Cole Wehrle", "24.03", "2-4", "120 min", "Space-opera asymétrique."],
+  [11, "Civolution", 2, 2, "Deep Print / Matagot", "Stefan Feld", "24.03", "1-4", "180 min", "Eurogame expert."],
+  [12, "Fourmis", 1, 2, "Intrafin Games", "Yoann Levet", "14.08", "2-4", "90 min", "Gestion de colonie."],
+
+  // --- CATALOGUE & HITS RECENTS ---
+  [301, "Harmonies", 2, 0, "Libellud", "Johan Benvenuto", "18.03", "1-4", "30 min", "Nommé As d'Or Tout Public."],
+  [302, "The White Castle", 0, 2, "Devir / Iello", "Santos & Cendrero", "12.01", "1-4", "80 min", "Gestion de dés tendue."],
+  [303, "Nekojima", 0, 0, "Unfriendly Games", "Carmona & Nguyen", "18.06", "1-5", "20 min", "Adresse électrique."],
+  [304, "Faraway", 0, 1, "Catch Up Games", "Goupy & Lebrat", "10.01", "2-6", "25 min", "Tableau building inversé."],
+  [305, "Evenfall", 0, 2, "Matagot", "Stefano Di Silvio", "24.03", "1-4", "90 min", "Engine building fantastique."],
+
+  // --- AJOUTS MANQUANTS (AS D'OR & BUZZ) ---
+  [401, "Odin", 2, 0, "Helvetiq", "Goh, Kim & Hwang", "16.01", "2-6", "15 min", "Gagnant As d'Or Tout Public."],
+  [402, "Captain Flip", 2, 0, "Playpunk", "Mori & Conzadori", "16.01", "2-5", "20 min", "Nommé As d'Or. Tuiles pirate."],
+  [403, "For a Crown", 2, 0, "Repos Production", "Maxime Rambourg", "09.01", "2-4", "30 min", "Nommé As d'Or. Noble et fourbe."],
+  [404, "Kutná Hora", 2, 2, "Iello", "Bystroň, Jarosch & Čáslava", "12.01", "2-4", "90 min", "Nommé As d'Or Expert. Éco réaliste."],
+  [405, "Sankoré", 2, 2, "Super Meeple", "Lopiano & Fernandez", "05.05", "1-4", "150 min", "Nommé As d'Or Expert. Université."],
+  [406, "Opération Noisettes", 2, 3, "Auzou", "J. & E. Soleil", "11.01", "1-4", "15 min", "Gagnant As d'Or Enfant."],
+  [407, "Les Éclairtout", 2, 3, "Loki", "Hach & Silva", "12.01", "2-4", "15 min", "Nommé As d'Or Enfant. Cherche/trouve."],
+  [408, "Mimose & Sam", 2, 3, "Locomuse", "T. Dagenais-Lespérance", "Espace Enfant", "2-4", "20 min", "Nommé As d'Or Enfant. Enquête."],
+  [409, "Daybreak", 2, 2, "Intrafin / CMYK", "Matt Leacock", "14.08", "1-4", "90 min", "Coop climat. Auteur Pandemic."],
+  [410, "King of Tokyo: Duel", 1, 5, "Iello", "Richard Garfield", "12.01", "2", "20 min", "Version 2 joueurs du classique."],
+  [411, "SETI", 1, 2, "Iello / CGE", "Tomáš Holek", "12.01", "1-4", "120 min", "Exploration spatiale expert."],
+  [412, "Panda Spin", 1, 0, "Matagot", "Yoann Levet", "24.03", "2-5", "20 min", "Jeu de défausse malin."],
+  [413, "Kelp", 1, 5, "Matagot / Wonderbow", "Carl Robinson", "24.03", "2", "45 min", "Requin vs Poulpe asymétrique."],
+  [414, "Gatsby", 1, 0, "Catch Up Games", "Bleau & Cravotta", "10.01", "2-5", "45 min", "Gestion de main et luxe."],
+  [415, "All-Star Draft", 1, 0, "Palladis Games", "Marco Pranzo", "05.08", "2-6", "30 min", "Draft de hockey sur glace."],
+  [416, "Ironwood", 1, 5, "Super Meeple", "L.D. Gáspár", "05.05", "1-2", "60 min", "Duel asymétrique factions."],
+  [417, "Agent Avenue", 1, 5, "Iello", "Indie Boards & Cards", "12.01", "2", "20 min", "Bluff et majorité."],
+
+  // --- LISTE GENERALE (VOTRE LISTE CORRIGÉE) ---
+  [101, "Patata!", 1, 4, "23 zéro", "Julien Sentis", "10.12", "2-99", "30 min", "Patate chaude revisitée."],
+  [102, "Save Us All", 1, 1, "Abym games", "Nicolas Robert", "03.04", "4-8", "120 min", "Coopératif intense."],
+  [103, "Magna Roma", 0, 2, "Archona / Blackrock", "Stan Kordonskiy", "16.01", "1-4", "90 min", "Civilisation romaine."],
+  [104, "Philarmonix", 1, 2, "Archona Games", "Kostas Karamanis", "16.01", "1-4", "150 min", "Eurogame musical."],
+  [105, "The Royal Society", 1, 2, "Atalia", "Lauge Luchau", "17.03", "1-4", "120 min", "Placement d'ouvriers."],
+  [106, "Pas touche", 1, 3, "Atalia", "Atalia Team", "17.03", "2-6", "15 min", "Mémoire rapide."],
+  [107, "Formula 5", 1, 0, "Atalia", "Lauge Luchau", "17.03", "2-5", "15 min", "Course tactique."],
+  [108, "7 Leagues", 1, 0, "ATM Gaming", "Bastien Guégan", "07.07", "2-6", "20 min", "Optimisation de route."],
+  [109, "Paire de Choc", 1, 4, "Bandjo", "Bandjo Studio", "11.01", "2-15", "30 min", "Party game coop."],
+  [110, "To me! ...or not?", 1, 4, "Bankiiiz", "Romaric Galonnier", "14.01", "3-6", "20 min", "Communication."],
+  [111, "Trait Cool", 1, 0, "Bankiiiz", "Romain Caterdjian", "14.01", "2-8", "30 min", "Dessin coopératif."],
+  [112, "Vroom", 1, 0, "Big moustache", "Frédéric Moyersoen", "08.03", "3-6", "15 min", "Course effrénée."],
+  [113, "Limit", 1, 2, "Blackrock", "Blackrock Team", "16.01", "1-6", "150 min", "Stratégie profonde."],
+  [114, "Mozaik", 0, 0, "Blam!", "Julien Prothière", "13.02", "1-4", "30 min", "Draft ouvert."],
+  [115, "Chouineurs", 1, 4, "Blam!", "Ludovic Maublanc", "13.02", "3-5", "20 min", "Bluff et plis."],
+  [116, "Derniers droides", 1, 1, "Blue cocker", "Alain Rivollet", "16.01", "1-4", "40 min", "Mécanique originale."],
+  [117, "Ice Split", 1, 0, "Blue orange", "Théo Rivière", "11.02", "2-4", "15 min", "Jeu de cartes glacial."],
+  [118, "A_way", 1, 0, "Blue orange", "Blue Orange Team", "11.02", "2-4", "30 min", "Pose de tuiles."],
+  [119, "Got five", 1, 0, "Blue orange", "Christian Giove", "11.02", "2-4", "15 min", "Déduction pure."],
+  [120, "Secrets de Warden", 1, 1, "Bombyx", "Matthew Dunstan", "30.02", "1-4", "30 min", "Déduction narrative."],
+  [121, "Knarr : Skali", 1, 1, "Bombyx", "Thomas Dupont", "30.02", "2-4", "30 min", "Extension Viking."],
+  [122, "Map Masters", 1, 0, "Captain games", "Ian S. Bach", "10.01", "1-5", "45 min", "Action simultanée."],
+  [123, "Tea and Rum", 1, 2, "Captain games", "Phil Northcott", "10.01", "2-4", "120 min", "Gestion de marché."],
+  [124, "Heredity: Lexington", 1, 2, "Darucat", "Cance & Kobel", "10.12", "1-4", "150 min", "Campagne narrative."],
+  [125, "Chateau combo", 1, 1, "Catch Up games", "Grard & Roussel", "10.01", "2-5", "30 min", "Extension draft."],
+  [126, "Red Notice", 1, 4, "Catch Up games", "Catchup Team", "10.01", "2-8", "30 min", "Rôles cachés."],
+  [127, "Matchy Matchy", 1, 4, "Cocktail games", "Favre-Godal & Lebrat", "09.16", "3-8", "30 min", "Jeu d'équipes."],
+  [128, "Kumata", 1, 0, "Cosmoludo", "Pierre Canuel", "09.08", "2-4", "20 min", "Territoire abstrait."],
+  [129, "Alchimix", 1, 1, "CTRL Zèbre", "Alexis Aspecada", "05.02", "2-5", "20 min", "Cartes alchimiques."],
+  [130, "Quintessence", 1, 1, "CTRL Zèbre", "Fabrice Chazal", "05.02", "2-4", "45 min", "Tuiles et conflits."],
+  [131, "Charuma", 1, 0, "Darucat", "Takashi Saito", "10.12", "2-5", "45 min", "Paris et plis."],
+  [132, "Battle of Hoth", 1, 0, "Days of Wonders", "Borg & Martinot", "09.01", "2-4", "30 min", "Affrontement Star Wars."],
+  [133, "Grizzy & Lemmings", 1, 3, "Débacle jeux", "Débacle Team", "09.01", "1-4", "15 min", "Dés coopératifs."],
+  [134, "Daydream", 1, 0, "Disto studio", "Disto Team", "31.01", "1-5", "30 min", "Loto tactique."],
+  [135, "Ding", 1, 0, "Don't panic", "Alexandre Droit", "07.01", "2-7", "10 min", "Cartes nerveux."],
+  [136, "Terres de destinées", 1, 1, "Don't panic", "Don't Panic", "07.01", "2-6", "30 min", "Négociation et bluff."],
+  [137, "Styx", 1, 2, "Don't panic", "Don't Panic", "07.01", "2-6", "45 min", "Enchères infernales."],
+  [138, "Goutons voir!", 1, 4, "Don't panic", "Don't Panic", "07.01", "2-5", "20 min", "Déduction apéro."],
+  [139, "Mon 1er Deck building", 1, 3, "Don't panic", "Don't Panic", "07.01", "2-5", "15 min", "Apprentissage."],
+  [140, "Fruit Cocktail", 1, 0, "Don't panic", "Don't Panic", "07.01", "2-4", "10 min", "Draft rapide."],
+  [141, "Spyworld", 1, 0, "Don't panic", "Don't Panic", "07.01", "2-4", "30 min", "Flip & Write."],
+  [142, "Dozito", 1, 0, "Double combo", "Double Combo", "11.04", "2-5", "20 min", "Collection colorée."],
+  [143, "Crabes vs Poulpes", 1, 5, "La boîte de jeux", "Théo Rivière", "08.01", "2", "10 min", "Duel tactique."],
+  [144, "1ers Contacts", 1, 2, "Explor8", "Damaso Rita", "16.01", "2-5", "60 min", "Mouvements cachés."],
+  [145, "Bean to bar", 1, 2, "Fentasy games", "Geri Gallas", "03.05", "2-4", "180 min", "Eurogame chocolat."],
+  [146, "Animal Rescue Team", 1, 0, "Fentasy games", "Matt Leacock", "03.05", "1-4", "60 min", "Coopération animale."],
+  [147, "Bellevue", 1, 0, "Gigamic", "Zach Hoekstra", "20.02", "2-5", "20 min", "Draft de ville."],
+  [148, "Au Pif", 1, 4, "Gigamic", "Johnson & Langsworthy", "20.02", "1-8", "18 min", "Ambiance absurde."],
+  [149, "Pirate King", 1, 0, "Gigamic", "Frankie Bu", "20.02", "2-5", "15 min", "Action simulanée."],
+  [150, "Ratak", 1, 4, "Gigamic", "Valentin Daubresse", "20.02", "2-6", "15 min", "Rapidité."],
+  [151, "Micro Hero Hercule", 1, 1, "Gigamic", "Léandre Proust", "20.02", "1-2", "20 min", "Coop héroïque."],
+  [152, "Misfit Heroes", 1, 1, "Gigamic", "Phil Walker-Harding", "20.02", "2-4", "45 min", "Deck building."],
+  [153, "Pigeon explosion", 1, 0, "Gigamic", "Gigamic Team", "20.02", "2-5", "30 min", "Chaos urbain."],
+  [154, "Medievallons", 1, 0, "Gigamic", "Gigamic Team", "20.02", "2-5", "40 min", "Cartes médiévales."],
+  [155, "La triplette", 1, 0, "Gigamic", "Gigamic Team", "20.02", "2-4", "45 min", "Dés tactiques."],
+  [156, "Bloody Grove", 1, 5, "Grrre Games", "Grrre Team", "10.03", "2", "30 min", "Bluff deck-building."],
+  [157, "Trök", 1, 1, "Grrre Games", "Grrre Team", "10.03", "2-4", "40 min", "Marché et draft."],
+  [158, "Forest leader", 1, 0, "Haumea Games", "Haumea Team", "07.03", "3-6", "30 min", "Semi-coop."],
+  [159, "Wrath of Fire Mtn", 0, 1, "Iello", "Kevin Lanzing", "12.01", "2-4", "45 min", "Majorité volcanique."],
+  [160, "Plante Bataille", 1, 0, "Iello", "Iello Team", "12.01", "3-6", "15 min", "Tuiles asymétriques."],
+  [161, "1 QUILLE !", 1, 0, "Iello", "Iello Team", "12.01", "2-5", "20 min", "Adresse."],
+  [162, "Railroad Tiles", 1, 0, "Iello", "Hjalmar Hach", "12.01", "2-5", "30 min", "Réseau ferré."],
+  [163, "Freigard", 1, 5, "inPatience", "inPatience Team", "12.05", "1", "15 min", "Solo intelligent."],
+  [164, "Mayor of Chicago", 1, 5, "inPatience", "inPatience Team", "12.05", "1", "30 min", "Solo gestion."],
+  [165, "Echoes of time", 1, 2, "Intrafin", "Intrafin Team", "14.08", "2-4", "60 min", "Voyage temporel."],
+  [166, "Light Speed Arena", 1, 4, "Intrafin", "James Ernest", "14.08", "1-4", "5 min", "Combat ultra-rapide."],
+  [167, "Aquaria", 1, 2, "Intrafin", "Tomáš Holek", "14.08", "1-4", "60 min", "Placement aquatique."],
+  [168, "Dame Nature", 1, 0, "Jeux opla", "Jeux opla Team", "13.08", "3-6", "15 min", "Déduction nature."],
+  [169, "Pollen", 1, 5, "Jeux opla", "Florent Toscano", "13.08", "2", "15 min", "Majorité duel."],
+  [170, "Le petit théatre", 1, 0, "Kodama", "Kodama Team", "03.06", "3-8", "30 min", "Mise en scène."],
+  [171, "Miams", 1, 0, "KYF Editions", "Jules Messaud", "08.01", "1-5", "30 min", "Collection gourmande."],
+  [172, "Grace", 1, 0, "La Rose noire", "Rose Noire Team", "16.01", "2", "30 min", "Cartes élégantes."],
+  [173, "Ghost manor", 1, 3, "Laboludic", "Romaric Galonnier", "16.01", "2-4", "15 min", "Hanté."],
+  [174, "Codex: Abbaye", 1, 2, "Le lion vert", "Lion Vert Team", "05.09", "1-99", "240 min", "Enquête géante."],
+  [175, "Gévaudan", 1, 2, "Le lion vert", "Lion Vert Team", "05.09", "1-4", "30 min", "Déduction."],
+  [176, "A wild Venture", 1, 0, "Lucky Duck", "Lucky Duck Team", "05.01", "1-2", "60 min", "Exploration."],
+  [177, "Borealis", 1, 0, "Lucky Duck", "Lucky Duck Team", "05.01", "2-4", "45 min", "Draft polaire."],
+  [178, "Trinket trove", 1, 0, "Lucky Duck", "Lucky Duck Team", "05.01", "2-6", "30 min", "Draft rapide."],
+  [179, "Maki San", 1, 5, "Ludically", "Ludically Team", "07.04", "2", "15 min", "Déduction sushi."],
+  [180, "Moustache", 1, 0, "Lumberjack", "Antonin Boccara", "08.01", "3-6", "20 min", "Plis malins."],
+  [181, "Alice", 1, 0, "Lumberjack", "Lumberjack Team", "08.01", "2-6", "30 min", "Flip & Write."],
+  [182, "Faust Vs Mephisto", 1, 5, "Mandoo games", "Mandoo Team", "18.07", "2", "25 min", "Duel diabolique."],
+  [183, "Trucs en stock", 1, 4, "Matagot", "Matagot Team", "24.03", "2-10", "20 min", "Party game."],
+  [184, "Bomb5", 1, 0, "Matagot", "Matagot Team", "24.03", "2-5", "15 min", "Tuiles explosives."],
+  [185, "Goat simulator", 1, 4, "MOOD Publishing", "MOOD Team", "08.11", "3-6", "20 min", "Chaos pur."],
+  [186, "Yami", 1, 1, "Musoka studio", "Musoka Team", "16.05", "2-4", "30 min", "Coop asymétrique."],
+  [187, "All in : predictions", 1, 0, "Next move", "Next Move Team", "09.01", "2-5", "25 min", "Paris tactiques."],
+  [188, "Mini rogue : Conseil", 1, 1, "Nuts Publishing", "Di Stefano", "06.13", "1-2", "30 min", "Aventure."],
+  [189, "Visions", 1, 0, "Olémains games", "Olémains Team", "08.09", "2-5", "30 min", "Observation."],
+  [190, "Pépite", 1, 4, "Openworld", "OpenWorld Team", "22.03", "3-6", "20 min", "Bluff minier."],
+  [191, "Etonak vanguard", 1, 2, "Ora games", "Ora Team", "04.08", "1-2", "60 min", "Tactique expert."],
+  [192, "Yubibo", 1, 0, "Origames", "Origames Team", "05.03", "2-8", "10 min", "Adresse doigts."],
+  [193, "Post office", 1, 0, "Origames", "Origames Team", "05.03", "2-4", "45 min", "Logistique."],
+  [194, "Ritual", 1, 0, "Palladis Games", "Tomás Tarragón", "05.08", "2-6", "25 min", "Déduction."],
+  [195, "Dadada", 1, 4, "Pixie Games", "Antoine Bauza", "09.09", "2-99", "30 min", "Coop sonore."],
+  [196, "Ethernal Decks", 1, 1, "Pixie Games", "Pixie Team", "09.09", "1-4", "40 min", "Plis célestes."],
+  [197, "Carnimal", 1, 0, "Pixie Games", "Bruno Cathala", "09.09", "2", "25 min", "Duel tactique."],
+  [198, "Cup the crab", 1, 0, "Pixie Games", "Pixie Team", "09.09", "3-5", "20 min", "Gestion rapide."],
+  [199, "Quorum", 1, 2, "Pixie Games", "Pixie Team", "09.09", "2-4", "45 min", "Politique."],
+  [200, "Préjugés", 1, 4, "Pixie Games", "Pixie Team", "09.09", "2-6", "20 min", "Party game osé."],
+  [201, "Fief England", 1, 2, "Pixie Games", "Pixie Team", "09.09", "2-4", "120 min", "Conquête médiévale."],
+  [202, "Isla Bomba", 1, 1, "Play punk", "PlayPunk Team", "09.01", "2-5", "30 min", "Extension."],
+  [203, "Brillant", 1, 0, "Ravensburger", "Ravensburger Team", "17.01", "1-6", "25 min", "Roll & Write."],
+  [204, "Propolis", 1, 1, "Ravensburger", "Ravensburger Team", "17.01", "1-4", "30 min", "Ruche."],
+  [205, "Koï", 1, 1, "Ravensburger", "Ravensburger Team", "17.01", "1-4", "45 min", "Majorité zen."],
+  [206, "Labyrinthe chrono", 1, 0, "Ravensburger", "Ravensburger Team", "17.01", "2-4", "20 min", "Exploration."],
+  [207, "Carnuta", 1, 0, "Repos prod", "Repos Team", "09.01", "2-4", "25 min", "Forêt tactique."],
+  [208, "Chateau rossignol", 1, 1, "Sand Castle", "Sand Castle Team", "16.01", "2", "45 min", "Duel asymétrique."],
+  [209, "Emblèmes", 1, 0, "Savana", "Savana Team", "14.02", "3-5", "30 min", "Programmation."],
+  [210, "Tag Team", 1, 1, "Scorpion masqué", "Christian Martinez", "14.06", "2", "10 min", "Deck building de combat."],
+  [211, "Encyclopedie montres", 1, 3, "Scorpion masqué", "Scorpion Team", "14.06", "2-4", "30 min", "Mémoire monstrueuse."],
+  [212, "Panorama", 1, 0, "Scorpion masqué", "Scorpion Team", "14.06", "2-4", "20 min", "Paysages."],
+  [213, "Gardlings", 1, 0, "Schmidt Spiele", "Schmidt Team", "19.06", "1-4", "45 min", "Motifs colorés."],
+  [214, "One round ?", 1, 4, "Schmidt Spiele", "Tobias Tesar", "19.06", "2-12", "15 min", "Coop rapide."],
+  [215, "Kingdom crossing", 1, 2, "Sorry we are french", "Marco Canetta", "10.01", "1-4", "120 min", "Mouvements experts."],
+  [216, "Epic melee", 1, 0, "Sorry we are french", "Matthias Cramer", "10.01", "3-6", "20 min", "Bagarre médiévale."],
+  [217, "Leda", 1, 2, "Sorry we are french", "SWAF Team", "10.01", "2", "30 min", "Duel expert."],
+  [218, "Dewan", 1, 1, "Space cowboys", "Space Cowboys Team", "09.01", "2-4", "40 min", "Territoire stratégique."],
+  [219, "Amanite", 1, 0, "Spiral Editions", "Spiral Team", "10.04", "2-4", "30 min", "Déduction."],
+  [220, "Space Lab", 1, 0, "Studio H", "Studio H Team", "24.06", "1-4", "20 min", "Gestion spatiale."],
+  [221, "Tulikko", 1, 0, "Studio H", "Studio H Team", "24.06", "2-4", "20 min", "Tuiles rapides."],
+  [222, "Bella vista", 1, 1, "Studio H", "Studio H Team", "24.06", "2-4", "45 min", "Construction."],
+  [223, "Amarok", 1, 4, "Subverti", "Subverti Team", "19.01", "3-6", "15 min", "Bluff sauvage."],
+  [224, "Sanctuary", 0, 2, "Super meeple", "Krzysztof Zięba", "05.05", "1-5", "150 min", "Grand jeu de tuiles."],
+  [225, "Kronologic Babylon", 1, 1, "Super meeple", "Yoann Levet", "05.05", "1-4", "30 min", "Déduction."],
+  [226, "Mythologies", 1, 0, "Super meeple", "Max & Froh", "05.05", "2-4", "40 min", "Collection."],
+  [227, "Ayar", 1, 2, "Super meeple", "Thomas Spitzer", "05.05", "1-4", "90 min", "Civilisation Inca."],
+  [228, "World order", 1, 2, "Super meeple", "Bagiartakis", "05.05", "2-4", "180 min", "Géopolitique."],
+  [229, "Revenant", 1, 2, "Super meeple", "Super Meeple Team", "05.05", "1-4", "120 min", "Placement experts."],
+  [230, "Life of amazonia", 1, 2, "Super meeple", "Kasper Lapp", "05.05", "1-4", "120 min", "Construction nature."],
+  [231, "Usual crapules", 1, 4, "Sylex", "Sylex Team", "05.32", "3-5", "30 min", "Bluff."],
+  [232, "Galileo Galilei", 0, 2, "Sylex", "Tomáš Holek", "05.32", "1-4", "100 min", "Astronomie."],
+  [233, "Postcard", 1, 0, "Synapses games", "Eric Dubus", "06.01", "1-4", "45 min", "Voyage."],
+  [234, "Frosted blooms", 1, 0, "Synapses games", "Synapses Team", "06.01", "1-4", "40 min", "Tuiles."],
+  [235, "Circadia", 1, 0, "Synapses games", "Hisashi Hayashi", "06.01", "2-5", "30 min", "Rythme."],
+  [236, "Archipels", 1, 0, "Tiki", "Tiki Team", "05.10", "2-4", "45 min", "Territoire."],
+  [237, "Pouss' ta poule", 1, 3, "The Flying Games", "Flying Games Team", "13.04", "2-4", "20 min", "Ferme."],
+  [238, "Heroes conquer", 1, 1, "Tribuo", "Tribuo Team", "13.01", "2-4", "60 min", "Flip & Write."],
+  [239, "Du bout des doigts", 1, 4, "Tribuo", "Tribuo Team", "13.01", "2-6", "30 min", "Sensoriel."],
+  [240, "Pyramire", 1, 1, "Tribuo", "Tribuo Team", "13.01", "2-4", "60 min", "Égypte tactique."],
+  [241, "Dungeon Exit", 1, 0, "Unfriendly Games", "Unfriendly Team", "18.06", "1-2", "20 min", "Labyrinthe."],
+  [242, "Le chat & la tour", 1, 0, "Unfriendly Games", "Unfriendly Team", "18.06", "1-5", "30 min", "Adresse."],
+  [243, "Heroes love to lie", 1, 0, "Unfriendly Games", "Unfriendly Team", "18.06", "2-5", "30 min", "Bluff."],
+  [244, "LetterUp", 1, 0, "Unfriendly Games", "Unfriendly Team", "18.06", "1-2", "30 min", "Mots."],
+  [245, "Dudo Amigo", 1, 4, "Victoire Edition", "Silvano Sorrentino", "05.14", "3-8", "10 min", "Ambiance."],
+  [246, "Team Quack", 1, 0, "Wilson games", "Wilson Team", "18.06", "3-6", "20 min", "Coop."],
+  [247, "Polaroid game", 1, 0, "Wilson games", "Wilson Team", "18.06", "3-10", "15 min", "Mémoire."],
+  [248, "Oh my socks", 1, 3, "Wilson games", "Wilson Team", "18.06", "2-5", "15 min", "Chaussettes."],
+  [249, "Elixirus", 1, 1, "Wilson games", "Wilson Team", "18.06", "2-5", "40 min", "Alchimie."],
+  [250, "Cat trick", 1, 0, "Wilson games", "Wilson Team", "18.06", "3-5", "15 min", "Plis."],
+  [251, "100 limit", 1, 0, "Ykanoly Studio", "Ykanoly Team", "08.06", "2-8", "20 min", "Numérique."],
+  [252, "Once Upon a Line", 1, 2, "Lucky Duck", "William Aubert", "05.01", "1-4", "90 min", "Aventure narrative."],
+  [253, "Behind Gold", 1, 4, "FIJ Official", "Cédric Millet", "Showroom", "2-5", "15 min", "Jeu officiel FIJ."],
+  [261, "Earth: Abundance", 1, 1, "Lucky Duck", "Maxime Tardif", "05.01", "1-5", "60 min", "Extension Earth."]
+];
+
+// 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
+export const initialGames = rawGames.map(g => ({
+  id: g[0],
+  title: g[1],
+  category: CAT[g[2]],
+  type: TYPE[g[3]],
+  publisher: g[4],
+  author: g[5],
+  stand: g[6],
+  players: g[7],
+  duration: g[8],
+  description: g[9]
+}));
