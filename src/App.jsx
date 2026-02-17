@@ -10,8 +10,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [favorites, setFavorites] = useState([]);
-  // NOUVEAU : État pour stocker les jeux testés
-  const [tested, setTested] = useState([]); 
+  const [tested, setTested] = useState([]); // État pour les jeux testés
   const [filterType, setFilterType] = useState('Tous');
   
   const [customGames, setCustomGames] = useState([]);
@@ -55,13 +54,15 @@ const App = () => {
                           normalizeText(g.stand).includes(term);
       const matchFilter = filterType === "Tous" || g.type === filterType;
       
+      // LOGIQUE DES ONGLETS
       if (activeTab === 'asdor') return matchSearch && matchFilter && g.category === "As d'Or";
       if (activeTab === 'news') return matchSearch && matchFilter && g.category === "Nouveauté";
       if (activeTab === 'mylist') return matchSearch && favorites.includes(g.id);
-      // Optionnel : Si vous voulez un onglet pour les jeux testés, on pourrait l'ajouter ici
+      if (activeTab === 'tested') return matchSearch && tested.includes(g.id); // NOUVEAU FILTRE TESTÉS
+      
       return matchSearch && matchFilter;
     });
-  }, [searchTerm, activeTab, favorites, filterType, allGames]);
+  }, [searchTerm, activeTab, favorites, tested, filterType, allGames]);
 
   const openEditModal = (game, e) => {
     e.stopPropagation();
@@ -91,7 +92,6 @@ const App = () => {
     setNewGame(emptyGame);
   };
 
-  // Fonction pour basculer l'état "Testé"
   const toggleTested = (id) => {
     setTested(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
   };
@@ -119,7 +119,12 @@ const App = () => {
           </div>
 
           <div className="flex gap-6 overflow-x-auto no-scrollbar pt-1">
-            {[{ id: 'all', label: 'Catalogue', icon: Package }, { id: 'asdor', label: "As d'Or", icon: Trophy }, { id: 'mylist', label: 'Ma Liste', icon: Heart }].map(tab => (
+            {[
+              { id: 'all', label: 'Catalogue', icon: Package }, 
+              { id: 'asdor', label: "As d'Or", icon: Trophy }, 
+              { id: 'mylist', label: 'Ma Liste', icon: Heart },
+              { id: 'tested', label: 'Testés', icon: CheckCircle2 } // NOUVEL ONGLET
+            ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 pb-2 border-b-2 font-black text-xs uppercase transition-all whitespace-nowrap ${activeTab === tab.id ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400'}`}><tab.icon size={14} />{tab.label}</button>
             ))}
           </div>
@@ -143,12 +148,9 @@ const App = () => {
                   <div className="flex items-center gap-1 text-[10px] font-bold text-slate-400 uppercase tracking-tighter truncate"><PenTool size={12} /> {game.author || "Anonyme"}</div>
                 </div>
                 
-                {/* ACTIONS (Coeur, Testé, Edit) */}
                 <div className="flex gap-1 shrink-0">
-                  {/* BOUTON TESTÉ */}
                   <button 
                     onClick={() => toggleTested(game.id)} 
-                    title="Marquer comme testé"
                     className={`p-2 rounded-full transition-all ${tested.includes(game.id) ? 'bg-green-100 text-green-600' : 'bg-slate-50 text-slate-300 hover:text-green-500'}`}
                   >
                     <CheckCircle2 size={18} />
@@ -171,17 +173,14 @@ const App = () => {
                   <span className="text-amber-600 font-bold text-[10px] flex items-center gap-1 uppercase tracking-tighter"><MapPin size={10}/> Stand {game.stand}</span>
                 </div>
                 
-                {/* INFO JOUEURS ET DURÉE */}
                 <div className="flex flex-col items-end gap-1">
                   <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase">
                     <Users size={12}/> {game.players}
                   </div>
-                  {/* AJOUT DURÉE ICI */}
                   <div className="flex items-center gap-1 text-slate-400 text-[10px] font-bold uppercase">
                     <Clock size={12}/> {game.duration}
                   </div>
                 </div>
-
               </div>
             </div>
           ))}
@@ -215,8 +214,6 @@ const App = () => {
                   <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Éditeur</label>
                   <input className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500" value={newGame.publisher} onChange={e => setNewGame({...newGame, publisher: e.target.value})} />
                 </div>
-                
-                {/* Groupe Joueurs + Durée */}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] font-black uppercase text-slate-400 block mb-1">Joueurs</label>
