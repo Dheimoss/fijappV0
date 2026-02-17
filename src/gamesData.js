@@ -2,7 +2,7 @@
 const CAT = ["Catalogue", "Nouveauté", "As d'Or", "Perso"];
 const TYPE = ["Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"];
 
-// 2. DATA BRUTE CORRIGÉE (Format: ID, Titre, CatIndex, TypeIndex, Editeur, Auteur, Stand, Joueurs, Temps, Description)
+// 2. DATA BRUTE (Format: ID, Titre, CatIndex, TypeIndex, Editeur, Auteur, Stand, Joueurs, Temps, Description)
 const rawGames = [
   // --- AS D'OR 2025 & INCONTOURNABLES ---
   [1, "Flip 7", 2, 4, "Catch Up Games", "Eric S. Burgess", "10.01", "3-8", "20 min", "Le stop-ou-encore phénomène."],
@@ -44,7 +44,7 @@ const rawGames = [
   [416, "Ironwood", 1, 5, "Super Meeple", "L.D. Gáspár", "05.05", "1-2", "60 min", "Duel asymétrique factions."],
   [417, "Agent Avenue", 1, 5, "Iello", "Indie Boards & Cards", "12.01", "2", "20 min", "Bluff et majorité."],
 
-  // --- LISTE GENERALE CORRIGÉE ---
+  // --- LISTE GENERALE ---
   [101, "Patata!", 1, 4, "23 zéro", "Julien Sentis", "10.12", "2-99", "30 min", "Patate chaude revisitée."],
   [102, "Save Us All", 1, 1, "Abym games", "Nicolas Robert", "03.04", "4-8", "120 min", "Coopératif intense."],
   [103, "Magna Roma", 0, 2, "Archona / Blackrock", "Stan Kordonskiy", "16.01", "1-4", "90 min", "Civilisation romaine."],
@@ -82,8 +82,8 @@ const rawGames = [
   [135, "Ding", 1, 0, "Don't panic", "Alexandre Droit", "07.01", "2-7", "10 min", "Cartes nerveux."],
   [136, "Terres de destinées", 1, 1, "Don't panic", "Olivier Flament", "07.01", "2-6", "30 min", "Négociation et bluff."],
   [137, "Styx", 1, 2, "Don't panic", "Pierre Lahmi", "07.01", "2-6", "45 min", "Enchères infernales."],
-  [138, "Goutons voir!", 1, 4, "Don't panic", "Don't Panic Team", "07.01", "2-5", "20 min", "Déduction apéro."],
-  [139, "Mon 1er Deck building", 1, 3, "Don't panic", "Don't Panic Team", "07.01", "2-5", "15 min", "Apprentissage."],
+  [138, "Goutons voir!", 1, 4, "Don't panic", "Christophe Lauras", "07.01", "2-5", "20 min", "Déduction apéro."],
+  [139, "Mon 1er Deck building", 1, 3, "Don't panic", "F. Chazal & A. Poyé", "07.01", "2-5", "15 min", "Apprentissage."],
   [140, "Fruit Cocktail", 1, 0, "Don't panic", "Don't Panic Team", "07.01", "2-4", "10 min", "Draft rapide."],
   [141, "Spyworld", 1, 0, "Don't panic", "Don't Panic Team", "07.01", "2-4", "30 min", "Flip & Write."],
   [142, "Dozito", 1, 0, "Double combo", "Wolfgang Kramer", "11.04", "2-5", "20 min", "Collection colorée."],
@@ -98,7 +98,7 @@ const rawGames = [
   [151, "Micro Hero Hercule", 1, 1, "Gigamic", "Léandre Proust", "20.02", "1-2", "20 min", "Coop héroïque."],
   [152, "Misfit Heroes", 1, 1, "Gigamic", "Phil Walker-Harding", "20.02", "2-4", "45 min", "Deck building."],
   [153, "Pigeon explosion", 1, 0, "Gigamic", "Roberto Pellei", "20.02", "2-5", "30 min", "Chaos urbain."],
-  [154, "Medievallons", 1, 0, "Gigamic", "Gigamic Team", "20.02", "2-5", "40 min", "Cartes médiévales."],
+  [154, "Medievallons", 1, 0, "Gigamic", "Coen Balkestein", "20.02", "2-5", "40 min", "Cartes médiévales."],
   [155, "La triplette", 1, 0, "Gigamic", "Alice & C. Cardin", "20.02", "2-4", "45 min", "Dés tactiques."],
   [156, "Bloody Grove", 1, 5, "Grrre Games", "Jérémy Belzons", "10.03", "2", "30 min", "Bluff deck-building."],
   [157, "Trök", 1, 1, "Grrre Games", "S. Laget & B. Cathala", "10.03", "2-4", "40 min", "Marché et draft."],
@@ -184,14 +184,14 @@ const rawGames = [
   [237, "Pouss' ta poule", 1, 3, "The Flying Games", "B. Turpin & Y. Lidy", "13.04", "2-4", "20 min", "Ferme."],
   [238, "Heroes conquer", 1, 1, "Tribuo", "Tribuo Team", "13.01", "2-4", "60 min", "Flip & Write."],
   [239, "Du bout des doigts", 1, 4, "Tribuo", "Rémi Bernard", "13.01", "2-6", "30 min", "Sensoriel."],
-  [240, "Pyramire", 1, 1, "Tribuo", "Tribuo Team", "13.01", "2-4", "60 min", "Égypte tactique."],
+  [240, "Pyramire", 1, 1, "Tribuo", "Ughi & Rondelli", "13.01", "2-4", "60 min", "Égypte tactique."],
   [241, "Dungeon Exit", 1, 0, "Unfriendly Games", "D. Carmona & K. Nguyen", "18.06", "1-2", "20 min", "Labyrinthe."],
   [242, "Le chat & la tour", 1, 0, "Unfriendly Games", "M. Takizawa & Namiki", "18.06", "1-5", "30 min", "Adresse."],
   [243, "Heroes love to lie", 1, 0, "Unfriendly Games", "D. Carmona & K. Nguyen", "18.06", "2-5", "30 min", "Bluff."],
-  [244, "LetterUp", 1, 0, "Unfriendly Games", "Unfriendly Team", "18.06", "1-2", "30 min", "Mots."],
+  [244, "LetterUp", 1, 0, "Unfriendly Games", "D. Carmona & K. Nguyen", "18.06", "1-2", "30 min", "Mots."],
   [245, "Dudo Amigo", 1, 4, "Victoire Edition", "Silvano Sorrentino", "05.14", "3-8", "10 min", "Ambiance."],
   [246, "Team Quack", 1, 0, "Wilson games", "E. Morin & T. Saeys", "18.06", "3-6", "20 min", "Coop."],
-  [247, "Polaroid game", 1, 0, "Wilson games", "Wilson Team", "18.06", "3-10", "15 min", "Mémoire."],
+  [247, "Polaroid game", 1, 0, "Wilson games", "G. Waxkirsh & J. Harrison", "18.06", "3-10", "15 min", "Mémoire."],
   [248, "Oh my socks", 1, 3, "Wilson games", "A. Bauza & T. Rivière", "18.06", "2-5", "15 min", "Chaussettes."],
   [249, "Elixirus", 1, 1, "Wilson games", "D. Chapin & N. Kordowska", "18.06", "2-5", "40 min", "Alchimie."],
   [250, "Cat trick", 1, 0, "Wilson games", "Nagian", "18.06", "3-5", "15 min", "Plis."],
@@ -200,3 +200,17 @@ const rawGames = [
   [253, "Behind Gold", 1, 4, "FIJ Official", "Cédric Millet", "Showroom", "2-5", "15 min", "Jeu officiel FIJ."],
   [261, "Earth: Abundance", 1, 1, "Lucky Duck", "Maxime Tardif", "05.01", "1-5", "60 min", "Extension Earth."]
 ];
+
+// 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
+export const initialGames = rawGames.map(g => ({
+  id: g[0],
+  title: g[1],
+  category: CAT[g[2]],
+  type: TYPE[g[3]],
+  publisher: g[4],
+  author: g[5],
+  stand: g[6],
+  players: g[7],
+  duration: g[8],
+  description: g[9]
+}));
