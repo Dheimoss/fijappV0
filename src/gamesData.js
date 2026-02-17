@@ -1,3 +1,7 @@
+// 1. RÉFÉRENTIELS
+const CAT = ["Catalogue", "Nouveauté", "As d'Or", "Perso"];
+const TYPE = ["Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"];
+
 // 2. DATA BRUTE CORRIGÉE (Format: ID, Titre, CatIndex, TypeIndex, Editeur, Auteur, Stand, Joueurs, Temps, Description)
 const rawGames = [
   // --- AS D'OR 2025 & INCONTOURNABLES ---
