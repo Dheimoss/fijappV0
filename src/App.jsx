@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { initialGames } from './gamesData'; // Assure-toi que c'est le bon chemin
+import { initialGames } from './gamesData';
 import { 
   Heart, MapPin, Trophy, Search, 
   Package, Layers, Plus, 
@@ -12,15 +12,13 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('Tous');
   
-  // --- ÉTATS AVEC PERSISTANCE ---
+  // --- ÉTATS AVEC PERSISTANCE (Locale au navigateur) ---
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('fij2026_favorites') || '[]'));
   const [tested, setTested] = useState(() => JSON.parse(localStorage.getItem('fij2026_tested') || '[]'));
   const [customGames, setCustomGames] = useState(() => JSON.parse(localStorage.getItem('fij2026_customGames') || '[]'));
 
   // --- ÉTATS UI ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  // C'est cet état qui gère l'ouverture de la modale détail
   const [selectedGame, setSelectedGame] = useState(null); 
   
   // --- SYNC LOCALSTORAGE ---
@@ -34,7 +32,7 @@ const App = () => {
     const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
     navigator.clipboard.writeText(shareUrl);
-    alert("Lien copié !");
+    alert("Lien de partage copié ! Envoyez ce lien à vos amis pour qu'ils voient vos jeux.");
   };
 
   useEffect(() => {
@@ -43,7 +41,7 @@ const App = () => {
     if (sharedData) {
       try {
         const decodedData = JSON.parse(decodeURIComponent(escape(atob(sharedData))));
-        if (window.confirm("Importer la liste ?")) {
+        if (window.confirm("Importer la liste partagée (écrase vos données actuelles) ?")) {
           if (decodedData.f) setFavorites(decodedData.f);
           if (decodedData.t) setTested(decodedData.t);
           if (decodedData.c) setCustomGames(decodedData.c);
@@ -53,10 +51,33 @@ const App = () => {
     }
   }, []);
 
-  // --- FILTRAGE ---
-  const emptyGame = { title: '', publisher: '', author: '', stand: '', type: 'Tout Public', description: '', players: '', duration: '', myludoUrl: '', bggUrl: '' };
+  // --- GESTION DU NOUVEAU JEU ---
+  const emptyGame = { 
+    title: '', publisher: '', author: '', stand: '', 
+    type: 'Tout Public', category: 'Perso', 
+    description: '', players: '', duration: '',
+    myludoUrl: '', bggUrl: '' 
+  };
   const [newGame, setNewGame] = useState(emptyGame);
 
+  const handleSaveGame = (e) => {
+    e.preventDefault();
+    if (!newGame.title) return alert("Le titre est obligatoire");
+
+    const gameToSave = { 
+        ...newGame, 
+        id: `custom-${Date.now()}`,
+        // Génération auto des liens si non remplis
+        myludoUrl: newGame.myludoUrl || `https://www.myludo.fr/#!/search/${encodeURIComponent(newGame.title)}`,
+        bggUrl: newGame.bggUrl || `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(newGame.title)}`
+    };
+
+    setCustomGames(prev => [gameToSave, ...prev]);
+    setIsEditModalOpen(false);
+    setNewGame(emptyGame);
+  };
+
+  // --- LOGIQUE DE FILTRAGE ---
   const normalizeText = (text) => (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const allGames = useMemo(() => {
@@ -83,14 +104,6 @@ const App = () => {
     });
   }, [searchTerm, activeTab, favorites, tested, filterType, allGames]);
 
-  const handleSaveGame = (e) => {
-    e.preventDefault();
-    const gameToSave = { ...newGame, id: `custom-${Date.now()}` };
-    setCustomGames(prev => [gameToSave, ...prev]);
-    setIsEditModalOpen(false);
-    setNewGame(emptyGame);
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-32 font-sans">
       <header className="bg-white border-b sticky top-0 z-50 px-4 py-4 shadow-sm">
@@ -104,11 +117,11 @@ const App = () => {
             </div>
             
             <div className="flex gap-2">
-              <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
+              <button onClick={shareMyList} title="Partager ma liste" className="bg-slate-100 text-slate-600 p-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
                 <Share2 size={20} />
               </button>
-              <button onClick={() => { setNewGame(emptyGame); setIsEditModalOpen(true); }} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg flex items-center gap-2">
-                <Plus size={20} /><span className="hidden sm:inline text-xs font-black uppercase">Ajouter</span>
+              <button onClick={() => { setNewGame(emptyGame); setIsEditModalOpen(true); }} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors">
+                <Plus size={20} /><span className="hidden sm:inline text-xs font-black uppercase">Ajouter un jeu</span>
               </button>
             </div>
           </div>
@@ -118,7 +131,7 @@ const App = () => {
             <input 
               type="text" 
               placeholder="Rechercher un jeu, un auteur, un stand..." 
-              className="w-full pl-11 pr-4 py-3 bg-slate-100 rounded-2xl outline-none" 
+              className="w-full pl-11 pr-4 py-3 bg-slate-100 rounded-2xl outline-none focus:ring-2 ring-indigo-500/20" 
               value={searchTerm} 
               onChange={(e) => setSearchTerm(e.target.value)} 
             />
@@ -142,7 +155,6 @@ const App = () => {
           {filteredGames.map(game => (
             <div 
               key={game.id} 
-              /* --- C'EST ICI QUE LE CLIC EST DÉCLENCHÉ --- */
               onClick={() => setSelectedGame(game)} 
               className={`bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer relative ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}
             >
@@ -180,13 +192,9 @@ const App = () => {
 
       {/* --- MODALE DE DÉTAILS --- */}
       {selectedGame && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            {/* Overlay sombre au clic pour fermer */}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-indigo-950/60 backdrop-blur-sm" onClick={() => setSelectedGame(null)} />
-            
             <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200">
-                
-                {/* Header Modale */}
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider mb-2">
@@ -199,72 +207,91 @@ const App = () => {
                         <X size={24} />
                     </button>
                 </div>
-
-                {/* Infos Clés */}
                 <div className="flex gap-4 mb-6">
                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600">
-                        <Users size={14} /> {selectedGame.players}
+                        <Users size={14} /> {selectedGame.players || "?"}
                     </div>
                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600">
-                        <Clock size={14} /> {selectedGame.duration}
+                        <Clock size={14} /> {selectedGame.duration || "?"}
                     </div>
                     <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 ml-auto">
-                        <MapPin size={14} /> Stand {selectedGame.stand}
+                        <MapPin size={14} /> Stand {selectedGame.stand || "N/A"}
                     </div>
                 </div>
-
-                {/* Description Complète */}
                 <div className="bg-slate-50 p-4 rounded-2xl mb-6">
                     <h3 className="text-xs font-black text-slate-400 uppercase mb-2">Description</h3>
-                    <p className="text-slate-700 text-sm leading-relaxed">
-                        {selectedGame.description || "Aucune description disponible."}
-                    </p>
+                    <p className="text-slate-700 text-sm leading-relaxed">{selectedGame.description || "Aucune description."}</p>
                 </div>
-
-                {/* Liens Externes (CORRIGÉ AVEC myludoUrl ET bggUrl) */}
                 <div className="grid grid-cols-2 gap-3">
-                    {/* Vérifie myludoUrl au lieu de myludo */}
-                    {selectedGame.myludoUrl ? (
-                        <a href={selectedGame.myludoUrl} target="_blank" rel="noopener noreferrer" 
-                           className="flex items-center justify-center gap-2 bg-[#364958] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
-                            <ExternalLink size={16} /> MyLudo
-                        </a>
-                    ) : (
-                        <button disabled className="flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-sm cursor-not-allowed opacity-50">
-                            MyLudo (N/A)
-                        </button>
-                    )}
-
-                    {/* Vérifie bggUrl au lieu de bgg */}
-                    {selectedGame.bggUrl ? (
-                        <a href={selectedGame.bggUrl} target="_blank" rel="noopener noreferrer" 
-                           className="flex items-center justify-center gap-2 bg-[#FF5100] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
-                            <ExternalLink size={16} /> BGG
-                        </a>
-                    ) : (
-                        <button disabled className="flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-sm cursor-not-allowed opacity-50">
-                            BGG (N/A)
-                        </button>
-                    )}
-                </div>
-                
-                {/* Editeur */}
-                <div className="mt-4 text-center">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">Édité par {selectedGame.publisher}</span>
+                    <a href={selectedGame.myludoUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#364958] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90">
+                        <ExternalLink size={16} /> MyLudo
+                    </a>
+                    <a href={selectedGame.bggUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-[#FF5100] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90">
+                        <ExternalLink size={16} /> BGG
+                    </a>
                 </div>
             </div>
         </div>
       )}
 
-      {/* --- MODALE D'AJOUT (Nouveau jeu) --- */}
+      {/* --- MODALE D'AJOUT COMPLÈTE --- */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4">
-          <div className="bg-white w-full max-w-md rounded-[1.5rem] shadow-2xl p-6">
-            <h3 className="text-lg font-black uppercase mb-4">Nouveau Jeu</h3>
-            <input placeholder="Titre" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.title} onChange={e => setNewGame({...newGame, title: e.target.value})} />
-            <input placeholder="Auteur" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.author} onChange={e => setNewGame({...newGame, author: e.target.value})} />
-            <button onClick={handleSaveGame} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase">Sauvegarder</button>
-            <button onClick={() => setIsEditModalOpen(false)} className="w-full text-slate-400 mt-2 text-xs font-bold uppercase">Annuler</button>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl rounded-[1.5rem] shadow-2xl p-6 my-8">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black uppercase">Ajouter un nouveau jeu</h3>
+                <button onClick={() => setIsEditModalOpen(false)}><X size={24} /></button>
+            </div>
+            
+            <form onSubmit={handleSaveGame} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Titre du jeu *</label>
+                    <input required placeholder="Nom du jeu" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-2 ring-indigo-500/20" value={newGame.title} onChange={e => setNewGame({...newGame, title: e.target.value})} />
+                </div>
+                
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Auteur</label>
+                    <input placeholder="Ex: Bruno Cathala" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.author} onChange={e => setNewGame({...newGame, author: e.target.value})} />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Éditeur</label>
+                    <input placeholder="Ex: Iello" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.publisher} onChange={e => setNewGame({...newGame, publisher: e.target.value})} />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Stand</label>
+                    <input placeholder="Ex: 12.01" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.stand} onChange={e => setNewGame({...newGame, stand: e.target.value})} />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Type de public</label>
+                    <select className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.type} onChange={e => setNewGame({...newGame, type: e.target.value})}>
+                        {["Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"].map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Joueurs</label>
+                    <input placeholder="Ex: 2-4" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.players} onChange={e => setNewGame({...newGame, players: e.target.value})} />
+                </div>
+
+                <div>
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Durée</label>
+                    <input placeholder="Ex: 30 min" className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.duration} onChange={e => setNewGame({...newGame, duration: e.target.value})} />
+                </div>
+
+                <div className="md:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-slate-400 ml-2">Description</label>
+                    <textarea rows="3" placeholder="Résumé du jeu..." className="w-full bg-slate-100 rounded-xl px-4 py-3 outline-none" value={newGame.description} onChange={e => setNewGame({...newGame, description: e.target.value})} />
+                </div>
+
+                <div className="md:col-span-2 flex gap-3 mt-4">
+                    <button type="submit" className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase shadow-lg hover:bg-indigo-700 transition-colors">
+                        Sauvegarder le jeu
+                    </button>
+                </div>
+            </form>
           </div>
         </div>
       )}
