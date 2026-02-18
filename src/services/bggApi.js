@@ -1,76 +1,38 @@
 // src/services/bggApi.js
 
-// Petit cache pour ne pas rappeler l'API 50 fois pour le même jeu
-const imageCache = {};
+const BGG_ROOT = "https://boardgamegeek.com/xmlapi2/";
+const PROXY = "https://api.allorigins.win/get?url=";
 
-export const fetchGameImage = async (bggUrl, title) => {
-  const cacheKey = bggUrl || title;
-  
-  // 1. Vérifier le cache
-  if (imageCache[cacheKey]) return imageCache[cacheKey];
+export const fetchBggThumbnail = async (bggId, title) => {
+  const parser = new DOMParser();
+  let finalId = bggId;
 
-  // NOUVEAU PROXY : corsproxy.io (plus fiable que allorigins)
-  const proxyUrl = "https://corsproxy.io/?";
-  
   try {
-    let gameId = null;
-
-    // ÉTAPE A : Essayer de trouver l'ID depuis l'URL fournie (C'est le plus fiable)
-    if (bggUrl) {
-      const match = bggUrl.match(/\/boardgame\/(\d+)/);
-      if (match) {
-        gameId = match[1];
+    // ÉTAPE 1 : Si on n'a pas d'ID, on fait une recherche par titre
+    if (!finalId && title) {
+      const searchUrl = `${BGG_ROOT}search?query=${encodeURIComponent(title)}&type=boardgame&exact=1`;
+      const searchRes = await fetch(`${PROXY}${encodeURIComponent(searchUrl)}`);
+      const searchData = await searchRes.json();
+      const searchXml = parser.parseFromString(searchData.contents, "text/xml");
+      
+      const item = searchXml.querySelector("item");
+      if (item) {
+        finalId = item.getAttribute("id");
       }
     }
 
-    // ÉTAPE B : Si pas d'ID, faire une recherche par titre (Plan B, plus lent)
-    // On utilise encodeURIComponent pour sécuriser l'URL dans le proxy
-    if (!gameId && title) {
-      const searchUrl = `https://boardgamegeek.com/xmlapi2/search?query=${encodeURIComponent(title)}&type=boardgame&exact=1`;
-      const fullUrl = proxyUrl + encodeURIComponent(searchUrl);
+    if (!finalId) return null;
 
-      const searchRes = await fetch(fullUrl);
-      if (!searchRes.ok) throw new Error("Erreur Proxy Search");
-
-      // MODIFICATION : corsproxy renvoie du texte XML directement (pas de JSON wrapping)
-      const searchXmlText = await searchRes.text();
-      
-      const parser = new DOMParser();
-      const searchXml = parser.parseFromString(searchXmlText, "text/xml");
-      const item = searchXml.querySelector("item");
-      
-      if (item) gameId = item.getAttribute("id");
-    }
-
-    if (!gameId) return null; // Impossible de trouver le jeu
-
-    // ÉTAPE C : Récupération de l'image via l'ID
-    const thingUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}`;
-    const fullThingUrl = proxyUrl + encodeURIComponent(thingUrl);
-
-    const thingRes = await fetch(fullThingUrl);
-    if (!thingRes.ok) throw new Error("Erreur Proxy Thing");
-
-    // MODIFICATION : Lecture en tant que texte
-    const thingXmlText = await thingRes.text();
+    // ÉTAPE 2 : Récupération de l'image avec l'ID final
+    const thingUrl = `${BGG_ROOT}thing?id=${finalId}`;
+    const thingRes = await fetch(`${PROXY}${encodeURIComponent(thingUrl)}`);
+    const thingData = await thingRes.json();
+    const thingXml = parser.parseFromString(thingData.contents, "text/xml");
     
-    const parser = new DOMParser();
-    const thingXml = parser.parseFromString(thingXmlText, "text/xml");
-    
-    // On cherche l'image (thumbnail)
-    const thumbNode = thingXml.querySelector("thumbnail"); 
-
-    if (thumbNode) {
-      const url = thumbNode.textContent;
-      imageCache[cacheKey] = url; // Mise en cache
-      return url;
-    }
-    
-    return null;
-
-  } catch (err) {
-    // On garde le silence dans la console pour ne pas avoir de rouge partout si ça échoue
-    // console.warn("Erreur BGG pour : " + title); 
+    const thumbnail = thingXml.querySelector("thumbnail")?.textContent;
+    return thumbnail || null;
+  } catch (error) {
+    console.error(`Erreur BGG pour ${title || bggId}:`, error);
     return null;
   }
 };
