@@ -199,7 +199,8 @@ const rawGames = [
   [252, "Once Upon a Line", 1, 2, "Lucky Duck", "William Aubert", "05.01", "1-4", "90 min", "Aventure narrative à gratter. Suivez une ligne d'histoire, grattez des zones pour découvrir des mots cachés et résoudre l'intrigue."],
   [253, "Behind Gold", 1, 4, "FIJ Official", "Cédric Millet", "Showroom", "2-5", "15 min", "Enquête exclusive FIJ. Un jeu de déduction rapide créé spécialement pour le festival. Trouvez le coupable parmi les suspects."],
   [261, "Earth: Abundance", 1, 1, "Lucky Duck", "Maxime Tardif", "05.01", "1-5", "60 min", "Extension Earth. Ajoute de nouvelles cartes, des interactions entre joueurs et des graines pour enrichir vos écosystèmes."],
-  [262, "Dragonniers", 1, 2, "Super Meeple", "Bob Fisher & Adam Porter", "05.05", "2-4", "80 min", "Jeu de placement de tuiles et de majorité : pose de dragons pour dominer le territoire, simple et tactique."]
+  [262, "Dragonniers", 1, 2, "Super Meeple", "Bob Fisher & Adam Porter", "05.05", "2-4", "80 min", "Jeu de placement de tuiles et de majorité : pose de dragons pour dominer le territoire, simple et tactique."],
+  [263, "Galactic Cruise", 1, 2, "Super Meeple", "Dennis Northcott, T.K. King, Koltin Thompson", "05.05", "1-4", "90 min", "En tant que superviseur dans ce jeu de gestion et de placement d'ouvriers, construisez des navettes et gérez des croisières pour devenir le nouveau PDG."]
 ];
 
 // 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
