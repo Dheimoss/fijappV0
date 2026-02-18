@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { initialGames } from './gamesData';
+import { initialGames } from './gamesData'; // Assure-toi que c'est le bon chemin
 import { 
   Heart, MapPin, Trophy, Search, 
-  Package, Layers, X, Plus, 
-  Clock, Users, PenTool, Edit2, CheckCircle2,
-  Share2 
+  Package, Layers, Plus, 
+  CheckCircle2, Share2, ExternalLink, 
+  Clock, Users, X
 } from 'lucide-react';
 
 const App = () => {
@@ -17,22 +17,24 @@ const App = () => {
   const [tested, setTested] = useState(() => JSON.parse(localStorage.getItem('fij2026_tested') || '[]'));
   const [customGames, setCustomGames] = useState(() => JSON.parse(localStorage.getItem('fij2026_customGames') || '[]'));
 
+  // --- ÉTATS UI ---
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // C'est cet état qui gère l'ouverture de la modale détail
+  const [selectedGame, setSelectedGame] = useState(null); 
+  
+  // --- SYNC LOCALSTORAGE ---
   useEffect(() => localStorage.setItem('fij2026_favorites', JSON.stringify(favorites)), [favorites]);
   useEffect(() => localStorage.setItem('fij2026_tested', JSON.stringify(tested)), [tested]);
   useEffect(() => localStorage.setItem('fij2026_customGames', JSON.stringify(customGames)), [customGames]);
 
-  // --- LOGIQUE DE PARTAGE & IMPORT ---
+  // --- PARTAGE ---
   const shareMyList = () => {
-    const data = {
-      f: favorites,
-      t: tested,
-      c: customGames 
-    };
+    const data = { f: favorites, t: tested, c: customGames };
     const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
-    
     navigator.clipboard.writeText(shareUrl);
-    alert("Lien de partage copié ! Tes amis verront tes favoris et tes jeux créés.");
+    alert("Lien copié !");
   };
 
   useEffect(() => {
@@ -41,36 +43,28 @@ const App = () => {
     if (sharedData) {
       try {
         const decodedData = JSON.parse(decodeURIComponent(escape(atob(sharedData))));
-        if (window.confirm("Importer la liste partagée ? (Attention: cela écrasera vos données actuelles)")) {
+        if (window.confirm("Importer la liste ?")) {
           if (decodedData.f) setFavorites(decodedData.f);
           if (decodedData.t) setTested(decodedData.t);
           if (decodedData.c) setCustomGames(decodedData.c);
           window.history.replaceState({}, document.title, window.location.pathname);
         }
-      } catch (e) {
-        console.error("Erreur d'import", e);
-      }
+      } catch (e) { console.error("Erreur import", e); }
     }
   }, []);
 
-  // --- LOGIQUE DE FILTRAGE ---
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingGameId, setEditingGameId] = useState(null);
-  const emptyGame = { title: '', publisher: '', author: '', stand: '', type: 'Tout Public', description: '', players: '', duration: '' };
+  // --- FILTRAGE ---
+  const emptyGame = { title: '', publisher: '', author: '', stand: '', type: 'Tout Public', description: '', players: '', duration: '', myludoUrl: '', bggUrl: '' };
   const [newGame, setNewGame] = useState(emptyGame);
 
   const normalizeText = (text) => (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-  // Fusion des jeux initiaux et custom
   const allGames = useMemo(() => {
-    // Si un jeu custom a le même ID qu'un jeu initial (édition), il prend le dessus
     const baseWithEdits = initialGames.map(bg => customGames.find(cg => cg.id === bg.id) || bg);
-    // Les jeux purement nouveaux (créés à la main avec ID 'custom-...')
     const trulyNew = customGames.filter(cg => !initialGames.find(bg => bg.id === cg.id));
     return [...baseWithEdits, ...trulyNew];
   }, [customGames]);
 
-  // CORRECTION ICI : Ajout de la recherche par auteur
   const filteredGames = useMemo(() => {
     const term = normalizeText(searchTerm);
     return allGames.filter(g => {
@@ -78,35 +72,22 @@ const App = () => {
         normalizeText(g.title).includes(term) || 
         normalizeText(g.publisher).includes(term) || 
         normalizeText(g.stand).includes(term) ||
-        normalizeText(g.author).includes(term); // <--- AJOUT DE LA RECHERCHE AUTEUR
+        normalizeText(g.author).includes(term);
 
       const matchFilter = filterType === "Tous" || g.type === filterType;
 
-      // Logique des onglets
       if (activeTab === 'asdor') return matchSearch && matchFilter && g.category === "As d'Or";
       if (activeTab === 'mylist') return matchSearch && favorites.includes(g.id);
       if (activeTab === 'tested') return matchSearch && tested.includes(g.id);
-      
-      // Onglet par défaut (Catalogue / All)
       return matchSearch && matchFilter;
     });
   }, [searchTerm, activeTab, favorites, tested, filterType, allGames]);
 
   const handleSaveGame = (e) => {
     e.preventDefault();
-    const gameToSave = { ...newGame, id: editingGameId || `custom-${Date.now()}` };
-    if (editingGameId) {
-      // Mise à jour d'un jeu existant
-      setCustomGames(prev => {
-        const exists = prev.find(g => g.id === editingGameId);
-        if (exists) return prev.map(g => g.id === editingGameId ? gameToSave : g);
-        return [...prev, gameToSave];
-      });
-    } else {
-      // Nouveau jeu
-      setCustomGames(prev => [gameToSave, ...prev]);
-    }
-    setIsModalOpen(false);
+    const gameToSave = { ...newGame, id: `custom-${Date.now()}` };
+    setCustomGames(prev => [gameToSave, ...prev]);
+    setIsEditModalOpen(false);
     setNewGame(emptyGame);
   };
 
@@ -125,10 +106,8 @@ const App = () => {
             <div className="flex gap-2">
               <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
                 <Share2 size={20} />
-                <span className="hidden sm:inline text-xs font-black uppercase">Partager</span>
               </button>
-
-              <button onClick={() => { setEditingGameId(null); setNewGame(emptyGame); setIsModalOpen(true); }} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg flex items-center gap-2">
+              <button onClick={() => { setNewGame(emptyGame); setIsEditModalOpen(true); }} className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg flex items-center gap-2">
                 <Plus size={20} /><span className="hidden sm:inline text-xs font-black uppercase">Ajouter</span>
               </button>
             </div>
@@ -161,15 +140,30 @@ const App = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredGames.map(game => (
-            <div key={game.id} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl transition-all relative ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}>
+            <div 
+              key={game.id} 
+              /* --- C'EST ICI QUE LE CLIC EST DÉCLENCHÉ --- */
+              onClick={() => setSelectedGame(game)} 
+              className={`bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer relative ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}
+            >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 pr-2">
                   <h3 className="font-black text-lg leading-tight mb-1">{game.title}</h3>
                   <div className="text-[10px] font-bold text-slate-400 uppercase">{game.author}</div>
                 </div>
                 <div className="flex gap-1">
-                  <button onClick={() => setTested(prev => prev.includes(game.id) ? prev.filter(t => t !== game.id) : [...prev, game.id])} className={`p-2 rounded-full ${tested.includes(game.id) ? 'bg-green-100 text-green-600' : 'bg-slate-50 text-slate-300'}`}><CheckCircle2 size={18} /></button>
-                  <button onClick={() => setFavorites(prev => prev.includes(game.id) ? prev.filter(f => f !== game.id) : [...prev, game.id])} className={`p-2 rounded-full ${favorites.includes(game.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300'}`}><Heart size={18} fill={favorites.includes(game.id) ? "currentColor" : "none"} /></button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setTested(prev => prev.includes(game.id) ? prev.filter(t => t !== game.id) : [...prev, game.id]) }} 
+                    className={`p-2 rounded-full transition-colors ${tested.includes(game.id) ? 'bg-green-100 text-green-600' : 'bg-slate-50 text-slate-300 hover:bg-slate-100'}`}
+                  >
+                    <CheckCircle2 size={18} />
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setFavorites(prev => prev.includes(game.id) ? prev.filter(f => f !== game.id) : [...prev, game.id]) }} 
+                    className={`p-2 rounded-full transition-colors ${favorites.includes(game.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300 hover:bg-slate-100'}`}
+                  >
+                    <Heart size={18} fill={favorites.includes(game.id) ? "currentColor" : "none"} />
+                  </button>
                 </div>
               </div>
               <p className="text-slate-500 text-xs italic mb-4 line-clamp-3">"{game.description}"</p>
@@ -184,15 +178,93 @@ const App = () => {
         </div>
       </main>
 
-      {/* MODAL */}
-      {isModalOpen && (
+      {/* --- MODALE DE DÉTAILS --- */}
+      {selectedGame && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
+            {/* Overlay sombre au clic pour fermer */}
+            <div className="absolute inset-0 bg-indigo-950/60 backdrop-blur-sm" onClick={() => setSelectedGame(null)} />
+            
+            <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200">
+                
+                {/* Header Modale */}
+                <div className="flex justify-between items-start mb-4">
+                    <div>
+                        <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider mb-2">
+                            {selectedGame.category} / {selectedGame.type}
+                        </span>
+                        <h2 className="text-3xl font-black text-slate-900 leading-tight">{selectedGame.title}</h2>
+                        <div className="text-sm font-bold text-slate-500 uppercase mt-1">De {selectedGame.author}</div>
+                    </div>
+                    <button onClick={() => setSelectedGame(null)} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 text-slate-500">
+                        <X size={24} />
+                    </button>
+                </div>
+
+                {/* Infos Clés */}
+                <div className="flex gap-4 mb-6">
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600">
+                        <Users size={14} /> {selectedGame.players}
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600">
+                        <Clock size={14} /> {selectedGame.duration}
+                    </div>
+                    <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-xl text-xs font-bold text-amber-700 ml-auto">
+                        <MapPin size={14} /> Stand {selectedGame.stand}
+                    </div>
+                </div>
+
+                {/* Description Complète */}
+                <div className="bg-slate-50 p-4 rounded-2xl mb-6">
+                    <h3 className="text-xs font-black text-slate-400 uppercase mb-2">Description</h3>
+                    <p className="text-slate-700 text-sm leading-relaxed">
+                        {selectedGame.description || "Aucune description disponible."}
+                    </p>
+                </div>
+
+                {/* Liens Externes (CORRIGÉ AVEC myludoUrl ET bggUrl) */}
+                <div className="grid grid-cols-2 gap-3">
+                    {/* Vérifie myludoUrl au lieu de myludo */}
+                    {selectedGame.myludoUrl ? (
+                        <a href={selectedGame.myludoUrl} target="_blank" rel="noopener noreferrer" 
+                           className="flex items-center justify-center gap-2 bg-[#364958] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+                            <ExternalLink size={16} /> MyLudo
+                        </a>
+                    ) : (
+                        <button disabled className="flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-sm cursor-not-allowed opacity-50">
+                            MyLudo (N/A)
+                        </button>
+                    )}
+
+                    {/* Vérifie bggUrl au lieu de bgg */}
+                    {selectedGame.bggUrl ? (
+                        <a href={selectedGame.bggUrl} target="_blank" rel="noopener noreferrer" 
+                           className="flex items-center justify-center gap-2 bg-[#FF5100] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
+                            <ExternalLink size={16} /> BGG
+                        </a>
+                    ) : (
+                        <button disabled className="flex items-center justify-center gap-2 bg-slate-100 text-slate-400 py-3 rounded-xl font-bold text-sm cursor-not-allowed opacity-50">
+                            BGG (N/A)
+                        </button>
+                    )}
+                </div>
+                
+                {/* Editeur */}
+                <div className="mt-4 text-center">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Édité par {selectedGame.publisher}</span>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* --- MODALE D'AJOUT (Nouveau jeu) --- */}
+      {isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-[1.5rem] shadow-2xl p-6">
             <h3 className="text-lg font-black uppercase mb-4">Nouveau Jeu</h3>
             <input placeholder="Titre" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.title} onChange={e => setNewGame({...newGame, title: e.target.value})} />
             <input placeholder="Auteur" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.author} onChange={e => setNewGame({...newGame, author: e.target.value})} />
             <button onClick={handleSaveGame} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase">Sauvegarder</button>
-            <button onClick={() => setIsModalOpen(false)} className="w-full text-slate-400 mt-2 text-xs font-bold uppercase">Annuler</button>
+            <button onClick={() => setIsEditModalOpen(false)} className="w-full text-slate-400 mt-2 text-xs font-bold uppercase">Annuler</button>
           </div>
         </div>
       )}
