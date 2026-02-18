@@ -203,17 +203,26 @@ const rawGames = [
 
 // 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
 // Cette fonction mappe automatiquement vos descriptions (index 9) et génère les liens (MyLudo + BGG)
-export const initialGames = rawGames.map(g => ({
-  id: g[0],
-  title: g[1],
-  category: CAT[g[2]],
-  type: TYPE[g[3]],
-  publisher: g[4],
-  author: g[5],
-  stand: g[6],
-  players: g[7],
-  duration: g[8],
-  description: g[9], // VOS DESCRIPTIONS SONT ICI
-  myludoUrl: `https://www.myludo.fr/#!/search/${encodeURIComponent(g[1])}`,
-  bggUrl: `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${encodeURIComponent(g[1])}`
-}));
+export const initialGames = rawGames.map(g => {
+  // Extraction de l'ID BGG depuis l'URL (index 11)
+  const bggUrl = g[11] || "";
+  const match = bggUrl.match(/\/boardgame\/(\d+)/);
+  const bggId = match ? match[1] : null;
+
+  return {
+    id: g[0],
+    title: g[1],
+    category: CAT[g[2]],
+    type: TYPE[g[3]],
+    publisher: g[4],
+    author: g[5],
+    stand: g[6],
+    players: g[7],
+    duration: g[8],
+    description: g[9],
+    myludoUrl: g[10],
+    bggUrl: g[11],
+    // Si l'image récupérée est null, on tente de construire le lien direct BGG
+    imageUrl: g[12] || (bggId ? `https://cf.geekdo-images.com/boardgame/${bggId}_md.jpg` : null)
+  };
+});

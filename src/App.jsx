@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { initialGames } from './gamesData'; // Assure-toi que c'est le bon chemin
+import { initialGames } from './gamesData'; 
+import GameThumbnail from './components/GameThumbnail'; // <--- IMPORT DU NOUVEAU FICHIER
 import { 
   Heart, MapPin, Trophy, Search, 
   Package, Layers, Plus, 
@@ -19,8 +20,6 @@ const App = () => {
 
   // --- ÉTATS UI ---
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  // C'est cet état qui gère l'ouverture de la modale détail
   const [selectedGame, setSelectedGame] = useState(null); 
   
   // --- SYNC LOCALSTORAGE ---
@@ -34,7 +33,7 @@ const App = () => {
     const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
     navigator.clipboard.writeText(shareUrl);
-    alert("Lien copié !");
+    alert("Lien copié dans le presse-papier !");
   };
 
   useEffect(() => {
@@ -43,7 +42,7 @@ const App = () => {
     if (sharedData) {
       try {
         const decodedData = JSON.parse(decodeURIComponent(escape(atob(sharedData))));
-        if (window.confirm("Importer la liste ?")) {
+        if (window.confirm("Importer la liste partagée ? Cela remplacera vos données actuelles.")) {
           if (decodedData.f) setFavorites(decodedData.f);
           if (decodedData.t) setTested(decodedData.t);
           if (decodedData.c) setCustomGames(decodedData.c);
@@ -137,15 +136,26 @@ const App = () => {
         </div>
       </header>
 
+      {/* --- GRILLE PRINCIPALE --- */}
       <main className="max-w-7xl mx-auto px-4 py-6">
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredGames.map(game => (
             <div 
               key={game.id} 
-              /* --- C'EST ICI QUE LE CLIC EST DÉCLENCHÉ --- */
               onClick={() => setSelectedGame(game)} 
-              className={`bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer relative ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}
+              className={`bg-white rounded-[1.5rem] border p-4 flex flex-col group hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer relative overflow-hidden ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}
             >
+              {/* IMAGE VIGNETTE */}
+              <div className="w-full h-32 mb-4 rounded-xl overflow-hidden shadow-sm relative bg-slate-100">
+                 <GameThumbnail 
+                    bggUrl={game.bggUrl} 
+                    title={game.title} 
+                 />
+                 <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider text-indigo-900 shadow-sm">
+                    {game.type}
+                 </div>
+              </div>
+
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1 pr-2">
                   <h3 className="font-black text-lg leading-tight mb-1">{game.title}</h3>
@@ -166,7 +176,7 @@ const App = () => {
                   </button>
                 </div>
               </div>
-              <p className="text-slate-500 text-xs italic mb-4 line-clamp-3">"{game.description}"</p>
+              <p className="text-slate-500 text-xs italic mb-4 line-clamp-2">"{game.description}"</p>
               <div className="mt-auto pt-4 border-t flex justify-between items-center">
                 <div className="flex flex-col">
                   <span className="text-indigo-600 font-black text-[11px] uppercase">{game.publisher}</span>
@@ -181,12 +191,19 @@ const App = () => {
       {/* --- MODALE DE DÉTAILS --- */}
       {selectedGame && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200">
-            {/* Overlay sombre au clic pour fermer */}
             <div className="absolute inset-0 bg-indigo-950/60 backdrop-blur-sm" onClick={() => setSelectedGame(null)} />
             
-            <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200">
+            <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl p-6 relative z-10 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto no-scrollbar">
                 
-                {/* Header Modale */}
+                {/* Image Grande */}
+                <div className="w-full h-48 rounded-2xl overflow-hidden mb-6 shadow-md bg-slate-100">
+                    <GameThumbnail 
+                        bggUrl={selectedGame.bggUrl} 
+                        title={selectedGame.title} 
+                        className="object-contain" // Pour voir l'image entière dans la modale
+                    />
+                </div>
+
                 <div className="flex justify-between items-start mb-4">
                     <div>
                         <span className="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-[10px] font-black uppercase tracking-wider mb-2">
@@ -200,7 +217,6 @@ const App = () => {
                     </button>
                 </div>
 
-                {/* Infos Clés */}
                 <div className="flex gap-4 mb-6">
                     <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl text-xs font-bold text-slate-600">
                         <Users size={14} /> {selectedGame.players}
@@ -213,7 +229,6 @@ const App = () => {
                     </div>
                 </div>
 
-                {/* Description Complète */}
                 <div className="bg-slate-50 p-4 rounded-2xl mb-6">
                     <h3 className="text-xs font-black text-slate-400 uppercase mb-2">Description</h3>
                     <p className="text-slate-700 text-sm leading-relaxed">
@@ -221,9 +236,7 @@ const App = () => {
                     </p>
                 </div>
 
-                {/* Liens Externes (CORRIGÉ AVEC myludoUrl ET bggUrl) */}
                 <div className="grid grid-cols-2 gap-3">
-                    {/* Vérifie myludoUrl au lieu de myludo */}
                     {selectedGame.myludoUrl ? (
                         <a href={selectedGame.myludoUrl} target="_blank" rel="noopener noreferrer" 
                            className="flex items-center justify-center gap-2 bg-[#364958] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
@@ -235,7 +248,6 @@ const App = () => {
                         </button>
                     )}
 
-                    {/* Vérifie bggUrl au lieu de bgg */}
                     {selectedGame.bggUrl ? (
                         <a href={selectedGame.bggUrl} target="_blank" rel="noopener noreferrer" 
                            className="flex items-center justify-center gap-2 bg-[#FF5100] text-white py-3 rounded-xl font-bold text-sm hover:opacity-90 transition-opacity">
@@ -248,7 +260,6 @@ const App = () => {
                     )}
                 </div>
                 
-                {/* Editeur */}
                 <div className="mt-4 text-center">
                     <span className="text-[10px] text-slate-400 font-bold uppercase">Édité par {selectedGame.publisher}</span>
                 </div>
@@ -256,7 +267,7 @@ const App = () => {
         </div>
       )}
 
-      {/* --- MODALE D'AJOUT (Nouveau jeu) --- */}
+      {/* --- MODALE D'AJOUT --- */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-[1.5rem] shadow-2xl p-6">
