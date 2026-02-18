@@ -1,4 +1,4 @@
-// 1. RÉFÉRENTIELS
+// 1. RÉFÉRENTIELS (Ajout du double slash ici)
 const CAT = ["Catalogue", "Nouveauté", "As d'Or", "Perso"];
 const TYPE = ["Tout Public", "Initié", "Expert", "Enfant", "Ambiance", "Duel"];
 
@@ -201,28 +201,26 @@ const rawGames = [
   [261, "Earth: Abundance", 1, 1, "Lucky Duck", "Maxime Tardif", "05.01", "1-5", "60 min", "Extension Earth. Ajoute de nouvelles cartes, des interactions entre joueurs et des graines pour enrichir vos écosystèmes."]
 ];
 
-// 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
-// Cette fonction mappe automatiquement vos descriptions (index 9) et génère les liens (MyLudo + BGG)
+// 3. LOGIQUE DE RECONSTITUTION CORRIGÉE
 export const initialGames = rawGames.map(g => {
-  // Extraction de l'ID BGG depuis l'URL (index 11)
-  const bggUrl = g[11] || "";
-  const match = bggUrl.match(/\/boardgame\/(\d+)/);
-  const bggId = match ? match[1] : null;
-
+  // Création des URLs de recherche automatique car elles manquent dans rawGames
+  const searchTitle = encodeURIComponent(g[1]);
+  
   return {
     id: g[0],
     title: g[1],
-    category: CAT[g[2]],
-    type: TYPE[g[3]],
+    category: CAT[g[2]] || CAT[0],
+    type: TYPE[g[3]] || TYPE[0],
     publisher: g[4],
     author: g[5],
     stand: g[6],
     players: g[7],
     duration: g[8],
     description: g[9],
-    myludoUrl: g[10],
-    bggUrl: g[11],
-    // Si l'image récupérée est null, on tente de construire le lien direct BGG
-    imageUrl: g[12] || (bggId ? `https://cf.geekdo-images.com/boardgame/${bggId}_md.jpg` : null)
+    // Génération automatique des liens si absents
+    myludoUrl: `https://www.myludo.fr/#!/search/${searchTitle}`,
+    bggUrl: `https://boardgamegeek.com/searchboardgame.php?searchname=${searchTitle}`,
+    // On laisse l'imageUrl à null, le composant GameThumbnail s'occupera de la charger
+    imageUrl: null 
   };
 });

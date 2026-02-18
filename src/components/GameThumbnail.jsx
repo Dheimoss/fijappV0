@@ -1,39 +1,45 @@
 // src/components/GameThumbnail.jsx
 import React, { useState, useEffect } from 'react';
-import { fetchBggThumbnail } from '../services/bggApi';
+import { fetchGameData } from '../services/bggApi';
 import { ImageIcon } from 'lucide-react';
 
 const GameThumbnail = ({ bggId, title, className }) => {
-  const [url, setUrl] = useState(null);
+  const [imgUrl, setImgUrl] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
-    let isMounted = true;
-    const cacheKey = `bgg_v3_${bggId || title}`;
-    const cached = localStorage.getItem(cacheKey);
-
-    if (cached) {
-      setUrl(cached);
+    let mounted = true;
+    
+    if (!bggId) {
       setLoading(false);
       return;
     }
 
-    const loadThumbnail = async () => {
-      setLoading(true);
-      const thumbUrl = await fetchBggThumbnail(bggId, title);
-      
-      if (isMounted) {
-        if (thumbUrl) {
-          localStorage.setItem(cacheKey, thumbUrl);
-          setUrl(thumbUrl);
+    // Vérification du cache local
+    const cacheKey = `bgg_json_v1_${bggId}`;
+    const cached = localStorage.getItem(cacheKey);
+
+    if (cached) {
+      setImgUrl(cached);
+      setLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      const url = await fetchGameData(bggId);
+      if (mounted) {
+        if (url) {
+          localStorage.setItem(cacheKey, url);
+          setImgUrl(url);
         }
         setLoading(false);
       }
     };
 
-    loadThumbnail();
-    return () => { isMounted = false; };
-  }, [bggId, title]);
+    load();
+    return () => { mounted = false; };
+  }, [bggId]);
 
   if (loading) {
     return (
@@ -43,14 +49,22 @@ const GameThumbnail = ({ bggId, title, className }) => {
     );
   }
 
-  if (url) {
-    return <img src={url} alt={title} className={`object-cover ${className}`} loading="lazy" />;
+  if (error || !imgUrl) {
+    return (
+      <div className={`bg-slate-200 flex items-center justify-center text-slate-400 font-bold uppercase text-xs ${className}`}>
+        {title ? title.substring(0, 2) : "??"}
+      </div>
+    );
   }
 
   return (
-    <div className={`bg-slate-200 flex items-center justify-center text-slate-400 font-bold uppercase ${className}`}>
-      {title ? title.substring(0, 2) : "??"}
-    </div>
+    <img 
+      src={imgUrl} 
+      alt={title} 
+      className={`object-cover ${className}`} 
+      onError={() => setError(true)}
+      loading="lazy"
+    />
   );
 };
 
