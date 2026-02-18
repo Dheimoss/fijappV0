@@ -4,7 +4,7 @@ import {
   Heart, MapPin, Trophy, Search, 
   Package, Layers, X, Plus, 
   Clock, Users, PenTool, Edit2, CheckCircle2,
-  Share2 // <--- NE PAS OUBLIER CET IMPORT
+  Share2 
 } from 'lucide-react';
 
 const App = () => {
@@ -26,7 +26,7 @@ const App = () => {
     const data = {
       f: favorites,
       t: tested,
-      c: customGames // On partage aussi les jeux créés !
+      c: customGames 
     };
     const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
     const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
@@ -61,20 +61,33 @@ const App = () => {
 
   const normalizeText = (text) => (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // Fusion des jeux initiaux et custom
   const allGames = useMemo(() => {
+    // Si un jeu custom a le même ID qu'un jeu initial (édition), il prend le dessus
     const baseWithEdits = initialGames.map(bg => customGames.find(cg => cg.id === bg.id) || bg);
+    // Les jeux purement nouveaux (créés à la main avec ID 'custom-...')
     const trulyNew = customGames.filter(cg => !initialGames.find(bg => bg.id === cg.id));
     return [...baseWithEdits, ...trulyNew];
   }, [customGames]);
 
+  // CORRECTION ICI : Ajout de la recherche par auteur
   const filteredGames = useMemo(() => {
     const term = normalizeText(searchTerm);
     return allGames.filter(g => {
-      const matchSearch = normalizeText(g.title).includes(term) || normalizeText(g.publisher).includes(term) || normalizeText(g.stand).includes(term);
+      const matchSearch = 
+        normalizeText(g.title).includes(term) || 
+        normalizeText(g.publisher).includes(term) || 
+        normalizeText(g.stand).includes(term) ||
+        normalizeText(g.author).includes(term); // <--- AJOUT DE LA RECHERCHE AUTEUR
+
       const matchFilter = filterType === "Tous" || g.type === filterType;
+
+      // Logique des onglets
       if (activeTab === 'asdor') return matchSearch && matchFilter && g.category === "As d'Or";
       if (activeTab === 'mylist') return matchSearch && favorites.includes(g.id);
       if (activeTab === 'tested') return matchSearch && tested.includes(g.id);
+      
+      // Onglet par défaut (Catalogue / All)
       return matchSearch && matchFilter;
     });
   }, [searchTerm, activeTab, favorites, tested, filterType, allGames]);
@@ -82,8 +95,17 @@ const App = () => {
   const handleSaveGame = (e) => {
     e.preventDefault();
     const gameToSave = { ...newGame, id: editingGameId || `custom-${Date.now()}` };
-    if (editingGameId) setCustomGames(prev => prev.map(g => g.id === editingGameId ? gameToSave : g));
-    else setCustomGames(prev => [gameToSave, ...prev]);
+    if (editingGameId) {
+      // Mise à jour d'un jeu existant
+      setCustomGames(prev => {
+        const exists = prev.find(g => g.id === editingGameId);
+        if (exists) return prev.map(g => g.id === editingGameId ? gameToSave : g);
+        return [...prev, gameToSave];
+      });
+    } else {
+      // Nouveau jeu
+      setCustomGames(prev => [gameToSave, ...prev]);
+    }
     setIsModalOpen(false);
     setNewGame(emptyGame);
   };
@@ -101,7 +123,6 @@ const App = () => {
             </div>
             
             <div className="flex gap-2">
-              {/* BOUTON PARTAGER */}
               <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl flex items-center gap-2 hover:bg-indigo-50 hover:text-indigo-600 transition-all">
                 <Share2 size={20} />
                 <span className="hidden sm:inline text-xs font-black uppercase">Partager</span>
@@ -115,7 +136,13 @@ const App = () => {
 
           <div className="relative mb-4">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder="Rechercher un jeu, un stand..." className="w-full pl-11 pr-4 py-3 bg-slate-100 rounded-2xl outline-none" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input 
+              type="text" 
+              placeholder="Rechercher un jeu, un auteur, un stand..." 
+              className="w-full pl-11 pr-4 py-3 bg-slate-100 rounded-2xl outline-none" 
+              value={searchTerm} 
+              onChange={(e) => setSearchTerm(e.target.value)} 
+            />
           </div>
 
           <div className="flex gap-6 overflow-x-auto no-scrollbar">
@@ -132,7 +159,6 @@ const App = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-         {/* Grille des jeux */}
          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredGames.map(game => (
             <div key={game.id} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col group hover:shadow-xl transition-all relative ${tested.includes(game.id) ? 'border-green-200 bg-green-50/30' : ''}`}>
@@ -158,12 +184,13 @@ const App = () => {
         </div>
       </main>
 
-      {/* MODAL AJOUT (simplifié pour l'exemple) */}
+      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-indigo-950/40 backdrop-blur-sm p-4">
           <div className="bg-white w-full max-w-md rounded-[1.5rem] shadow-2xl p-6">
             <h3 className="text-lg font-black uppercase mb-4">Nouveau Jeu</h3>
             <input placeholder="Titre" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.title} onChange={e => setNewGame({...newGame, title: e.target.value})} />
+            <input placeholder="Auteur" className="w-full bg-slate-100 rounded-xl px-4 py-3 mb-4 outline-none" value={newGame.author} onChange={e => setNewGame({...newGame, author: e.target.value})} />
             <button onClick={handleSaveGame} className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase">Sauvegarder</button>
             <button onClick={() => setIsModalOpen(false)} className="w-full text-slate-400 mt-2 text-xs font-bold uppercase">Annuler</button>
           </div>
