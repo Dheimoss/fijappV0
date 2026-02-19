@@ -203,7 +203,7 @@ const rawGames = [
   [263, "Galactic Cruise", 1, 2, "Super Meeple", "Dennis Northcott, T.K. King, Koltin Thompson", "05.05", "1-4", "90 min", "En tant que superviseur dans ce jeu de gestion et de placement d'ouvriers, construisez des navettes et gérez des croisières pour devenir le nouveau PDG."],
   [264, "Manoir Bizzare", 1, 2, "Bombyx", "Louis Blaise & Justine Vanhuffel", "30.02", "N/A", "N/A", "Pas d'infos avant-première sortie en Juin"],
   [265, "Luthier", 1, 2, "Lucky Duck Games", "Dave Beck, Abe Burson", "05.01", "1-4", "90 min", "Dans Luthier - Le Génie de l'Instrument, votre but est d’accumuler le plus de points de prestige. "],
-  [265, "Tembo", 1, 2, "Lucky Duck Games", "Asger Harding Granerud, Dan Halstad", "05.01", "1-4", "45 min", "Dans Tembo - Survivre dans la Savane, guidez ensemble un troupeau d’éléphants dirigé par la matriarche à travers la vaste savane."]
+  [266, "Tembo", 1, 2, "Lucky Duck Games", "Asger Harding Granerud, Dan Halstad", "05.01", "1-4", "45 min", "Dans Tembo - Survivre dans la Savane, guidez ensemble un troupeau d’éléphants dirigé par la matriarche à travers la vaste savane."]
 ];
 
 // 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
