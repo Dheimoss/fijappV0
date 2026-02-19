@@ -203,7 +203,7 @@ const App = () => {
                     onClick={(e) => { e.stopPropagation(); setTested(prev => prev.includes(game.id) ? prev.filter(t => t !== game.id) : [...prev, game.id]) }} 
                     className={`flex items-center gap-1 px-3 py-1.5 rounded-xl transition-all border ${tested.includes(game.id) ? 'bg-green-600 border-green-600 text-white shadow-sm' : 'bg-white border-slate-200 text-slate-400 hover:border-green-400 hover:text-green-600'}`}
                   >
-                    <span className="text-[10px] font-black uppercase">{tested.includes(game.id) ? 'Testé' : 'À tester'}</span>
+                    <span className="text-[10px] font-black uppercase">{tested.includes(game.id) ? 'Testé' : 'On a test !'}</span>
                     <CheckCircle2 size={14} />
                   </button>
                 </div>

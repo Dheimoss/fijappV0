@@ -124,8 +124,8 @@ const rawGames = [
   [177, "Borealis", 1, 0, "Lucky Duck", "Dariusz Mindur", "05.01", "2-4", "45 min", "Draft et pyramide. Construisez un arbre de compétences et collectez des cristaux pour illuminer la nuit polaire."],
   [178, "Trinket trove", 1, 0, "Lucky Duck", "Rocco Privetera", "05.01", "2-6", "30 min", "Draft rapide. Passez les cartes et choisissez les meilleurs bibelots pour remplir vos étagères de collection."],
   [179, "Maki San", 1, 5, "Ludically", "M. Iaciancio & M. Lagroy", "07.04", "2", "15 min", "Déduction gourmande. Devinez la commande de sushis secrète de l'adversaire en posant des questions logiques."],
-  [180, "Moustache", 1, 0, "Lumberjack", "Antonin Boccara", "08.01", "3-6", "20 min", "Jeu de plis original. La valeur des cartes dépend de la longueur de la moustache des personnages !"],
-  [181, "Alice", 1, 0, "Lumberjack", "C. Alcouffe & L. Maublanc", "08.01", "2-6", "30 min", "Flip & Write féerique. Retournez des cartes et cochez votre feuille pour revivre les aventures d'Alice au Pays des Merveilles."],
+  [180, "Moustache", 1, 0, "Kodama", "Antonin Boccara", "08.01", "3-6", "20 min", "Jeu de plis original. La valeur des cartes dépend de la longueur de la moustache des personnages !"],
+  [181, "Alice", 1, 0, "Kodama", "C. Alcouffe & L. Maublanc", "08.01", "2-6", "30 min", "Flip & Write féerique. Retournez des cartes et cochez votre feuille pour revivre les aventures d'Alice au Pays des Merveilles."],
   [182, "Faust Vs Mephisto", 1, 5, "Mandoo games", "Geonil", "18.07", "2", "25 min", "Duel psychologique. Incarnez le bien ou le mal et tentez de corrompre ou sauver l'âme de Faust."],
   [183, "Trucs en stock", 1, 4, "Matagot", "Peter C. Hayward", "24.03", "2-10", "20 min", "Party game de bluff. Cachez des objets bizarres dans votre 'entrepôt' et essayez de piéger les autres."],
   [184, "Bomb5", 1, 0, "Matagot", "Fabrice Puleo", "24.03", "2-5", "15 min", "Jeu d'ambiance. Posez des tuiles pour créer des chemins, mais évitez les bombes cachées sous peine d'élimination."],
@@ -200,7 +200,10 @@ const rawGames = [
   [253, "Behind Gold", 1, 4, "FIJ Official", "Cédric Millet", "Showroom", "2-5", "15 min", "Enquête exclusive FIJ. Un jeu de déduction rapide créé spécialement pour le festival. Trouvez le coupable parmi les suspects."],
   [261, "Earth: Abundance", 1, 1, "Lucky Duck", "Maxime Tardif", "05.01", "1-5", "60 min", "Extension Earth. Ajoute de nouvelles cartes, des interactions entre joueurs et des graines pour enrichir vos écosystèmes."],
   [262, "Dragonniers", 1, 2, "Super Meeple", "Bob Fisher & Adam Porter", "05.05", "2-4", "80 min", "Jeu de placement de tuiles et de majorité : pose de dragons pour dominer le territoire, simple et tactique."],
-  [263, "Galactic Cruise", 1, 2, "Super Meeple", "Dennis Northcott, T.K. King, Koltin Thompson", "05.05", "1-4", "90 min", "En tant que superviseur dans ce jeu de gestion et de placement d'ouvriers, construisez des navettes et gérez des croisières pour devenir le nouveau PDG."]
+  [263, "Galactic Cruise", 1, 2, "Super Meeple", "Dennis Northcott, T.K. King, Koltin Thompson", "05.05", "1-4", "90 min", "En tant que superviseur dans ce jeu de gestion et de placement d'ouvriers, construisez des navettes et gérez des croisières pour devenir le nouveau PDG."],
+  [264, "Manoir Bizzare", 1, 2, "Bombyx", "Louis Blaise & Justine Vanhuffel", "30.02", "N/A", "N/A", "Pas d'infos avant-première sortie en Juin"],
+  [265, "Luthier", 1, 2, "Lucky Duck Games", "Dave Beck, Abe Burson", "05.01", "1-4", "90 min", "Dans Luthier - Le Génie de l'Instrument, votre but est d’accumuler le plus de points de prestige. "],
+  [265, "Tembo", 1, 2, "Lucky Duck Games", "Asger Harding Granerud, Dan Halstad", "05.01", "1-4", "45 min", "Dans Tembo - Survivre dans la Savane, guidez ensemble un troupeau d’éléphants dirigé par la matriarche à travers la vaste savane."]
 ];
 
 // 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
