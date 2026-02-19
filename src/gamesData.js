@@ -203,7 +203,13 @@ const rawGames = [
   [263, "Galactic Cruise", 1, 2, "Super Meeple", "Dennis Northcott, T.K. King, Koltin Thompson", "05.05", "1-4", "90 min", "En tant que superviseur dans ce jeu de gestion et de placement d'ouvriers, construisez des navettes et gérez des croisières pour devenir le nouveau PDG."],
   [264, "Manoir Bizzare", 1, 2, "Bombyx", "Louis Blaise & Justine Vanhuffel", "30.02", "N/A", "N/A", "Pas d'infos avant-première sortie en Juin"],
   [265, "Luthier", 1, 2, "Lucky Duck Games", "Dave Beck, Abe Burson", "05.01", "1-4", "90 min", "Dans Luthier - Le Génie de l'Instrument, votre but est d’accumuler le plus de points de prestige. "],
-  [266, "Tembo", 1, 2, "Lucky Duck Games", "Asger Harding Granerud, Dan Halstad", "05.01", "1-4", "45 min", "Dans Tembo - Survivre dans la Savane, guidez ensemble un troupeau d’éléphants dirigé par la matriarche à travers la vaste savane."]
+  [266, "Tembo", 1, 2, "Lucky Duck Games", "Asger Harding Granerud, Dan Halstad", "05.01", "1-4", "45 min", "Dans Tembo - Survivre dans la Savane, guidez ensemble un troupeau d’éléphants dirigé par la matriarche à travers la vaste savane."],
+  [267, "Salamandra", 1, 2, "Grrre Games", "Pierre Giroux, Johannes Goupy", "10.03", "1-4", "45 min", "Vous disposerez, lors de chaque manche, d’un nombre déterminé d’apprentis à poser et à faire travailler pour générer des ressources et des Points de Vénération"],
+  [268, "Strange World Above the Clouds", 1, 2, "Grrre Games", "Florian Grenier", "10.03", "1-4", "30 min", "Chaque personne a une aire de jeu devant elle. Il est interdit de jouer des cartes dans l'aire de jeu d'un adversaire. "],
+  [269, "Bunny Kingdom Town", 1, 2, "Iello", "Richard Garfield", "12.01", "1-2", "30 min", "Jeu en preview "],
+  [270, "Wispwood", 1, 2, "Iello", "Reed Ambrose", "12.01", "1-4", "30 min", "Illuminez une forêt magique et attirez un chat curieux avec des lueurs scintillantes."],
+  [271, "Restart", 1, 2, "Iello", "Younsu Hwang", "12.01", "2-4", "30 min", "Un jeu de tuiles à la fois élégant et nerveux, qui récompense autant l’anticipation que l’audace !"],
+  [272, "Ace of Spades", 1, 2, "Iello", "Benja Armorin", "12.01", "1-2", "30 min", "uez une main de poker (5 cartes) pour infliger des dégâts à l’ennemi. Chaque combinaison typique du poker inflige des dégâts spécifiques. Les figures ajoutent des bonus de dégâts. Les As sont encore plus puissants."]
 ];
 
 // 3. LOGIQUE DE RECONSTITUTION (Ne pas toucher)
