@@ -7,40 +7,73 @@ import {
 } from 'lucide-react';
 
 const App = () => {
-  // --- PERSISTANCE & IMPORT VIA URL ---
-  const [favorites, setFavorites] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shared = params.get('favs');
-    if (shared) return shared.split(',').map(Number);
-    return JSON.parse(localStorage.getItem('fij2026_favorites') || '[]');
-  });
-  
+  // --- ÉTATS ---
+  const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('fij2026_favorites') || '[]'));
   const [tested, setTested] = useState(() => JSON.parse(localStorage.getItem('fij2026_tested') || '[]'));
   const [customGames, setCustomGames] = useState(() => JSON.parse(localStorage.getItem('fij2026_customGames') || '[]'));
   
-  // --- ÉTATS INTERFACE ---
   const [activeTab, setActiveTab] = useState(() => favorites.length > 0 ? 'mylist' : 'all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('Tous');
   const [selectedGame, setSelectedGame] = useState(null);
 
+  // --- LOGIQUE D'IMPORTATION (Base64 + Confirmation) ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sharedData = params.get('share');
+    
+    if (sharedData) {
+      try {
+        const decodedData = JSON.parse(decodeURIComponent(escape(atob(sharedData))));
+        
+        if (window.confirm("Importer la liste partagée (écrase vos données actuelles) ?")) {
+          if (decodedData.f) setFavorites(decodedData.f);
+          if (decodedData.t) setTested(decodedData.t);
+          if (decodedData.c) setCustomGames(decodedData.c);
+          
+          // Nettoyage de l'URL pour éviter les imports en boucle
+          window.history.replaceState({}, document.title, window.location.pathname);
+          alert("Importation réussie !");
+        }
+      } catch (err) {
+        console.error("Erreur d'importation :", err);
+      }
+    }
+  }, []);
+
+  // --- PERSISTANCE ---
   useEffect(() => localStorage.setItem('fij2026_favorites', JSON.stringify(favorites)), [favorites]);
   useEffect(() => localStorage.setItem('fij2026_tested', JSON.stringify(tested)), [tested]);
   useEffect(() => localStorage.setItem('fij2026_customGames', JSON.stringify(customGames)), [customGames]);
 
-  // --- LOGIQUE DE PARTAGE ---
+  // --- LOGIQUE DE PARTAGE (Identique à ton ancienne version) ---
   const shareMyList = () => {
-    const baseUrl = window.location.href.split('?')[0];
-    const shareUrl = `${baseUrl}?favs=${favorites.join(',')}`;
-    if (navigator.share) {
-      navigator.share({ title: 'Ma liste FIJ 2026', text: 'Mes jeux du salon !', url: shareUrl });
-    } else {
+    try {
+      const data = {
+        f: favorites,
+        t: tested,
+        c: customGames
+      };
+      
+      const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
+      
       navigator.clipboard.writeText(shareUrl);
-      alert("Lien copié !");
+      alert("Lien de partage copié ! Envoyez ce lien à vos amis pour qu'ils voient vos jeux.");
+      
+      // Optionnel : Tentative de partage natif si mobile
+      if (navigator.share) {
+        navigator.share({
+          title: 'Ma liste FIJ 2026',
+          url: shareUrl,
+        }).catch(() => {});
+      }
+    } catch (err) {
+      alert("Erreur lors de la création du lien.");
     }
   };
 
-  // --- FUSION ANTI-DOUBLONS ---
+  // --- FUSION ET FILTRAGE ---
   const allGames = useMemo(() => {
     const gamesMap = new Map();
     initialGames.forEach(g => gamesMap.set(g.id, g));
@@ -50,10 +83,8 @@ const App = () => {
 
   const normalize = (t) => (t || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-  // --- FILTRAGE & STATS ---
   const displayData = useMemo(() => {
     const term = normalize(searchTerm);
-    
     const searched = allGames.filter(g => {
       const matchText = !term || normalize(g.title).includes(term) || normalize(g.publisher).includes(term) || normalize(g.author).includes(term) || normalize(g.stand).includes(term);
       const matchType = filterType === 'Tous' || g.type === filterType;
@@ -91,23 +122,27 @@ const App = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Dices className="text-indigo-600" size={28} />
-              <h1 className="text-xl font-black uppercase italic tracking-tighter">FIJ <span className="text-indigo-600">2026</span></h1>
+              <h1 className="text-xl font-black uppercase italic tracking-tighter leading-none">FIJ <span className="text-indigo-600">2026</span></h1>
             </div>
             <div className="flex gap-2">
-              <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl transition-all active:scale-95"><Share2 size={20} /></button>
-              <button className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg active:scale-95 transition-transform"><Plus size={20} /></button>
+              <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl transition-all active:scale-90 hover:bg-slate-200">
+                <Share2 size={20} />
+              </button>
+              <button className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg active:scale-95 transition-transform">
+                <Plus size={20} />
+              </button>
             </div>
           </div>
           
           <div className="relative mb-3">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder="Titre, auteur, stand..." className="w-full pl-11 pr-12 py-3 bg-slate-100 rounded-2xl outline-none focus:ring-2 ring-indigo-500/20 shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+            <input type="text" placeholder="Titre, auteur, stand..." className="w-full pl-11 pr-12 py-3 bg-slate-100 rounded-2xl outline-none focus:ring-2 ring-indigo-500/20" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             {searchTerm && <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400"><X size={18}/></button>}
           </div>
 
           <div className="flex gap-2 overflow-x-auto no-scrollbar mb-4">
             {['Tous', 'Enfants', 'Famille', 'Initié', 'Expert'].map(type => (
-              <button key={type} onClick={() => setFilterType(type)} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${filterType === type ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+              <button key={type} onClick={() => setFilterType(type)} className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase transition-all whitespace-nowrap ${filterType === type ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-400'}`}>
                 {type}
               </button>
             ))}
@@ -142,7 +177,7 @@ const App = () => {
                 <div className="flex items-center gap-1 flex-shrink-0"><Users size={12} /><span>{game.players}</span></div>
                 <div className="flex items-center gap-1 flex-shrink-0"><Clock size={12} /><span>{game.duration}</span></div>
                 <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg border border-amber-100 font-black tracking-tighter whitespace-nowrap">
-                  <MapPin size={10} /><span> {game.stand}</span>
+                  <MapPin size={10} /><span>St {game.stand}</span>
                 </div>
               </div>
 
@@ -161,9 +196,6 @@ const App = () => {
             </div>
           ))}
         </div>
-        {displayData.finalItems.length === 0 && (
-          <div className="text-center py-20 text-slate-400 italic">Aucun jeu trouvé...</div>
-        )}
       </main>
 
       {/* MODALE DÉTAILS */}
@@ -185,7 +217,7 @@ const App = () => {
             <div className="grid grid-cols-3 gap-2 mb-6">
               <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100"><Users size={16} className="mx-auto mb-1 text-indigo-600"/><span className="text-[10px] font-black block">{selectedGame.players} j.</span></div>
               <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100"><Clock size={16} className="mx-auto mb-1 text-indigo-600"/><span className="text-[10px] font-black block">{selectedGame.duration}</span></div>
-              <div className="bg-amber-50 p-3 rounded-2xl text-center border border-amber-100"><MapPin size={16} className="mx-auto mb-1 text-amber-600"/><span className="text-[10px] font-black block text-amber-700 uppercase tracking-tighter">{selectedGame.stand}</span></div>
+              <div className="bg-amber-50 p-3 rounded-2xl text-center border border-amber-100"><MapPin size={16} className="mx-auto mb-1 text-amber-600"/><span className="text-[10px] font-black block text-amber-700 uppercase tracking-tighter font-bold">St {selectedGame.stand}</span></div>
             </div>
 
             <div className="bg-slate-50 p-5 rounded-3xl mb-8 relative border border-slate-100 shadow-inner">
