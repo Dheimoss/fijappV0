@@ -31,9 +31,10 @@ const App = () => {
           if (decodedData.t) setTested(decodedData.t);
           if (decodedData.c) setCustomGames(decodedData.c);
           
-          // Nettoyage de l'URL pour éviter les imports en boucle
+          // Nettoyage de l'URL pour la propreté
           window.history.replaceState({}, document.title, window.location.pathname);
           alert("Importation réussie !");
+          setActiveTab('mylist');
         }
       } catch (err) {
         console.error("Erreur d'importation :", err);
@@ -46,8 +47,8 @@ const App = () => {
   useEffect(() => localStorage.setItem('fij2026_tested', JSON.stringify(tested)), [tested]);
   useEffect(() => localStorage.setItem('fij2026_customGames', JSON.stringify(customGames)), [customGames]);
 
-  // --- LOGIQUE DE PARTAGE (Identique à ton ancienne version) ---
-  const shareMyList = () => {
+  // --- LOGIQUE DE PARTAGE (Base64) ---
+  const shareMyList = async () => {
     try {
       const data = {
         f: favorites,
@@ -58,15 +59,22 @@ const App = () => {
       const encodedData = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
       const shareUrl = `${window.location.origin}${window.location.pathname}?share=${encodedData}`;
       
-      navigator.clipboard.writeText(shareUrl);
-      alert("Lien de partage copié ! Envoyez ce lien à vos amis pour qu'ils voient vos jeux.");
-      
-      // Optionnel : Tentative de partage natif si mobile
+      // On copie systématiquement dans le presse-papier
+      await navigator.clipboard.writeText(shareUrl);
+
+      // Si le partage natif est dispo (Mobile), on l'utilise pour cacher l'URL longue
       if (navigator.share) {
-        navigator.share({
-          title: 'Ma liste FIJ 2026',
-          url: shareUrl,
-        }).catch(() => {});
+        try {
+          await navigator.share({
+            title: 'Ma liste FIJ 2026',
+            text: 'Regarde ma sélection de jeux pour le FIJ !',
+            url: shareUrl,
+          });
+        } catch (err) {
+          // L'utilisateur a annulé, on ne fait rien
+        }
+      } else {
+        alert("Lien de partage copié ! Envoyez ce lien à vos amis pour qu'ils voient vos jeux.");
       }
     } catch (err) {
       alert("Erreur lors de la création du lien.");
