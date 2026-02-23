@@ -7,32 +7,56 @@ import {
 } from 'lucide-react';
 
 const App = () => {
-  // --- PERSISTANCE SÉCURISÉE (Favoris & Testés) ---
+  // --- 1. LOGIQUE D'IMPORTATION SÉCURISÉE (Favoris & Testés) ---
   const [favorites, setFavorites] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    const shared = params.get('favs');
-    if (shared && shared.trim() !== "") return shared.split(',').map(Number);
-    return JSON.parse(localStorage.getItem('fij2026_favorites') || '[]');
+    const sharedFavs = params.get('favs');
+    
+    if (sharedFavs && sharedFavs.trim() !== "") {
+      const parsed = sharedFavs.split(',').map(Number);
+      // On écrase le localstorage immédiatement pour l'import
+      localStorage.setItem('fij2026_favorites', JSON.stringify(parsed));
+      return parsed;
+    }
+    const local = localStorage.getItem('fij2026_favorites');
+    return local ? JSON.parse(local) : [];
   });
   
   const [tested, setTested] = useState(() => {
     const params = new URLSearchParams(window.location.search);
-    const sharedTested = params.get('test');
-    if (sharedTested && sharedTested.trim() !== "") return sharedTested.split(',').map(Number);
-    return JSON.parse(localStorage.getItem('fij2026_tested') || '[]');
+    const sharedTest = params.get('test');
+    
+    if (sharedTest && sharedTest.trim() !== "") {
+      const parsed = sharedTest.split(',').map(Number);
+      localStorage.setItem('fij2026_tested', JSON.stringify(parsed));
+      return parsed;
+    }
+    const local = localStorage.getItem('fij2026_tested');
+    return local ? JSON.parse(local) : [];
   });
+
+  // Nettoyage de l'URL après l'import pour rester sur une URL propre
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('favs') || params.get('test')) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
 
   const [customGames, setCustomGames] = useState(() => JSON.parse(localStorage.getItem('fij2026_customGames') || '[]'));
   
-  const [activeTab, setActiveTab] = useState('all');
+  // --- 2. LOGIQUE D'ONGLET AU DÉMARRAGE ---
+  const [activeTab, setActiveTab] = useState(favorites.length > 0 ? 'mylist' : 'all');
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGame, setSelectedGame] = useState(null);
 
+  // Sauvegarde persistante auto
   useEffect(() => localStorage.setItem('fij2026_favorites', JSON.stringify(favorites)), [favorites]);
   useEffect(() => localStorage.setItem('fij2026_tested', JSON.stringify(tested)), [tested]);
   useEffect(() => localStorage.setItem('fij2026_customGames', JSON.stringify(customGames)), [customGames]);
 
-  // --- PARTAGE ---
+  // --- LOGIQUE DE PARTAGE ---
   const shareMyList = () => {
     const baseUrl = window.location.href.split('?')[0];
     const shareUrl = `${baseUrl}?favs=${favorites.join(',')}&test=${tested.join(',')}`;
@@ -40,11 +64,11 @@ const App = () => {
       navigator.share({ title: 'Ma liste FIJ 2026', url: shareUrl });
     } else {
       navigator.clipboard.writeText(shareUrl);
-      alert("Lien copié dans le presse-papier !");
+      alert("Lien de partage copié (Favoris + Testés) !");
     }
   };
 
-  // --- FUSION ET FILTRAGE ---
+  // --- FUSION ANTI-DOUBLONS ---
   const allGames = useMemo(() => {
     const gamesMap = new Map();
     initialGames.forEach(g => gamesMap.set(g.id, g));
@@ -54,6 +78,7 @@ const App = () => {
 
   const normalize = (t) => (t || "").toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+  // --- FILTRAGE & STATS ---
   const displayData = useMemo(() => {
     const term = normalize(searchTerm);
     const searched = allGames.filter(g => {
@@ -92,7 +117,7 @@ const App = () => {
               <h1 className="text-xl font-black uppercase italic tracking-tighter">FIJ <span className="text-indigo-600">2026</span></h1>
             </div>
             <div className="flex gap-2">
-              <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl hover:bg-indigo-50 transition-all"><Share2 size={20} /></button>
+              <button onClick={shareMyList} className="bg-slate-100 text-slate-600 p-2.5 rounded-xl hover:bg-indigo-50 transition-all shadow-sm"><Share2 size={20} /></button>
               <button className="bg-indigo-600 text-white p-2.5 rounded-xl shadow-lg active:scale-95 transition-transform"><Plus size={20} /></button>
             </div>
           </div>
@@ -148,6 +173,9 @@ const App = () => {
             </div>
           ))}
         </div>
+        {displayData.finalItems.length === 0 && (
+          <div className="text-center py-20 text-slate-400 italic">Aucun jeu trouvé...</div>
+        )}
       </main>
 
       {selectedGame && (
@@ -163,7 +191,7 @@ const App = () => {
                 <button onClick={() => toggleFavorite(selectedGame.id)} className={`p-2 rounded-full transition-all active:scale-125 ${favorites.includes(selectedGame.id) ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-400'}`}>
                   <Heart size={24} fill={favorites.includes(selectedGame.id) ? "currentColor" : "none"} />
                 </button>
-                <button onClick={() => setSelectedGame(null)} className="bg-slate-100 p-2 rounded-full text-slate-500"><X size={24} /></button>
+                <button onClick={() => setSelectedGame(null)} className="bg-slate-100 p-2 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"><X size={24} /></button>
               </div>
             </div>
             
