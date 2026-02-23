@@ -177,7 +177,7 @@ const App = () => {
                 <div className="flex items-center gap-1 flex-shrink-0"><Users size={12} /><span>{game.players}</span></div>
                 <div className="flex items-center gap-1 flex-shrink-0"><Clock size={12} /><span>{game.duration}</span></div>
                 <div className="flex items-center gap-1 bg-amber-50 text-amber-600 px-2 py-0.5 rounded-lg border border-amber-100 font-black tracking-tighter whitespace-nowrap">
-                  <MapPin size={10} /><span>St {game.stand}</span>
+                  <MapPin size={10} /><span>{game.stand}</span>
                 </div>
               </div>
 
@@ -217,7 +217,7 @@ const App = () => {
             <div className="grid grid-cols-3 gap-2 mb-6">
               <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100"><Users size={16} className="mx-auto mb-1 text-indigo-600"/><span className="text-[10px] font-black block">{selectedGame.players} j.</span></div>
               <div className="bg-slate-50 p-3 rounded-2xl text-center border border-slate-100"><Clock size={16} className="mx-auto mb-1 text-indigo-600"/><span className="text-[10px] font-black block">{selectedGame.duration}</span></div>
-              <div className="bg-amber-50 p-3 rounded-2xl text-center border border-amber-100"><MapPin size={16} className="mx-auto mb-1 text-amber-600"/><span className="text-[10px] font-black block text-amber-700 uppercase tracking-tighter font-bold">St {selectedGame.stand}</span></div>
+              <div className="bg-amber-50 p-3 rounded-2xl text-center border border-amber-100"><MapPin size={16} className="mx-auto mb-1 text-amber-600"/><span className="text-[10px] font-black block text-amber-700 uppercase tracking-tighter font-bold">{selectedGame.stand}</span></div>
             </div>
 
             <div className="bg-slate-50 p-5 rounded-3xl mb-8 relative border border-slate-100 shadow-inner">
