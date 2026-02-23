@@ -98,7 +98,7 @@ const App = () => {
               <div className="flex items-center gap-1"><Users size={12} /><span>{game.players}</span></div>
               <div className="flex items-center gap-1"><Clock size={12} /><span>{game.duration}</span></div>
               <div className="bg-amber-50 text-amber-600 px-2 py-0.5 rounded border border-amber-100 font-black flex items-center gap-1">
-                <MapPin size={10} />St {game.stand}
+                <MapPin size={10} />{game.stand}
               </div>
             </div>
             <p className="text-slate-500 text-[11px] italic mb-4 line-clamp-2 leading-relaxed">"{game.description}"</p>
