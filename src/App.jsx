@@ -19,17 +19,28 @@ const App = () => {
     return JSON.parse(localStorage.getItem('fij2026_favorites') || '[]');
   });
   
-  // Modification : tested stocke maintenant des objets {id, rating, comment}
   const [tested, setTested] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const sharedTest = params.get('test');
+    
+    // Priorité 1 : Importation via lien de partage
     if (sharedTest && sharedTest.trim() !== "") {
-      // Pour le partage simple, on garde les IDs
       const parsed = sharedTest.split(',').map(id => ({ id: Number(id), rating: 0, comment: '' }));
       localStorage.setItem('fij2026_tested', JSON.stringify(parsed));
       return parsed;
     }
-    return JSON.parse(localStorage.getItem('fij2026_tested') || '[]');
+
+    // Priorité 2 : LocalStorage avec MIGRATION pour ne rien perdre
+    const saved = localStorage.getItem('fij2026_tested');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Sécurité : si c'est l'ancien format [1, 2, 3], on convertit en [{id: 1...}]
+      if (parsed.length > 0 && typeof parsed[0] === 'number') {
+        return parsed.map(id => ({ id: id, rating: 0, comment: '' }));
+      }
+      return parsed;
+    }
+    return [];
   });
 
   const [customGames, setCustomGames] = useState(() => JSON.parse(localStorage.getItem('fij2026_customGames') || '[]'));
@@ -71,7 +82,6 @@ const App = () => {
 
   const toggleFavorite = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   
-  // Helper pour vérifier si un jeu est testé
   const isGameTested = (id) => tested.some(t => t.id === id);
 
   const toggleTested = (id) => {
@@ -82,14 +92,13 @@ const App = () => {
     });
   };
 
-  // Nouvelle fonction pour mettre à jour note et commentaire
   const updateReview = (id, rating, comment) => {
     setTested(prev => prev.map(t => t.id === id ? { ...t, rating, comment } : t));
   };
 
   const shareMyList = () => {
     const baseUrl = window.location.href.split('?')[0];
-    const testIds = tested.map(t => t.id);
+    const testIds = tested.map(t => t.id); // On n'envoie que les IDs pour garder l'URL courte
     const shareUrl = `${baseUrl}?favs=${favorites.join(',')}&test=${testIds.join(',')}`;
     if (navigator.share) {
       navigator.share({ title: 'Ma liste FIJ 2026', url: shareUrl });
@@ -175,45 +184,47 @@ const App = () => {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {displayData.finalItems.map(game => (
-            <div key={game.id} onClick={() => setSelectedGame(game)} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col hover:shadow-xl transition-all cursor-pointer group ${isGameTested(game.id) ? 'bg-green-50/50 border-green-200' : 'border-slate-100'}`}>
-              <div className="flex justify-between mb-1">
-                <h3 className="font-black text-lg leading-tight flex-1 group-hover:text-indigo-600">{game.title}</h3>
-                <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id); }} className={`ml-2 transition-transform active:scale-125 ${favorites.includes(game.id) ? 'text-red-500' : 'text-slate-300'}`}>
-                  <Heart size={20} fill={favorites.includes(game.id) ? "currentColor" : "none"} />
-                </button>
-              </div>
-              <div className="flex items-center gap-3 text-slate-400 mb-3 font-bold text-[10px]">
-                <div className="flex items-center gap-1"><Users size={12} /><span>{game.players}</span></div>
-                <div className="flex items-center gap-1"><Clock size={12} /><span>{game.duration}</span></div>
-                <div className="ml-auto text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded uppercase">{game.type}</div>
-              </div>
-              <p className="text-slate-500 text-[11px] italic mb-4 line-clamp-2 leading-relaxed">"{game.description}"</p>
-              
-              {/* Affichage rapide de la note si testé */}
-              {isGameTested(game.id) && tested.find(t => t.id === game.id)?.rating > 0 && (
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={10} fill={i < tested.find(t => t.id === game.id).rating ? "#16a34a" : "none"} className={i < tested.find(t => t.id === game.id).rating ? "text-green-600" : "text-green-200"} />
-                  ))}
+          {displayData.finalItems.map(game => {
+            const review = tested.find(t => t.id === game.id);
+            return (
+              <div key={game.id} onClick={() => setSelectedGame(game)} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col hover:shadow-xl transition-all cursor-pointer group ${isGameTested(game.id) ? 'bg-green-50/50 border-green-200' : 'border-slate-100'}`}>
+                <div className="flex justify-between mb-1">
+                  <h3 className="font-black text-lg leading-tight flex-1 group-hover:text-indigo-600">{game.title}</h3>
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id); }} className={`ml-2 transition-transform active:scale-125 ${favorites.includes(game.id) ? 'text-red-500' : 'text-slate-300'}`}>
+                    <Heart size={20} fill={favorites.includes(game.id) ? "currentColor" : "none"} />
+                  </button>
                 </div>
-              )}
+                <div className="flex items-center gap-3 text-slate-400 mb-3 font-bold text-[10px]">
+                  <div className="flex items-center gap-1"><Users size={12} /><span>{game.players}</span></div>
+                  <div className="flex items-center gap-1"><Clock size={12} /><span>{game.duration}</span></div>
+                  <div className="ml-auto text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded uppercase">{game.type}</div>
+                </div>
+                <p className="text-slate-500 text-[11px] italic mb-4 line-clamp-2 leading-relaxed">"{game.description}"</p>
+                
+                {review?.rating > 0 && (
+                  <div className="flex gap-0.5 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} size={10} fill={i < review.rating ? "#16a34a" : "none"} className={i < review.rating ? "text-green-600" : "text-green-200"} />
+                    ))}
+                  </div>
+                )}
 
-              <div className="mt-auto pt-3 border-t flex justify-between items-center gap-2">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="flex-shrink-0 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">{game.stand}</div>
-                  <span className="text-[10px] font-black uppercase text-slate-400 truncate">{game.publisher}</span>
+                <div className="mt-auto pt-3 border-t flex justify-between items-center gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className="flex-shrink-0 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">{game.stand}</div>
+                    <span className="text-[10px] font-black uppercase text-slate-400 truncate">{game.publisher}</span>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); toggleTested(game.id); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all flex-shrink-0 whitespace-nowrap ${isGameTested(game.id) ? 'bg-green-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                    {isGameTested(game.id) ? 'Fait !' : 'On a test'} <CheckCircle2 size={12} className="flex-shrink-0" />
+                  </button>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); toggleTested(game.id); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all flex-shrink-0 whitespace-nowrap ${isGameTested(game.id) ? 'bg-green-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
-                  {isGameTested(game.id) ? 'Fait !' : 'On a test'} <CheckCircle2 size={12} className="flex-shrink-0" />
-                </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </main>
 
-      {/* MODALE AJOUT JEU (Inchangée) */}
+      {/* MODALE AJOUT JEU */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-indigo-950/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 my-auto">
@@ -278,29 +289,32 @@ const App = () => {
               {selectedGame.longDescription || selectedGame.description || "Pas de description."}
             </div>
 
-            {/* SECTION REVIEW - Visible si le jeu est testé */}
+            {/* SECTION NOTE ET COMMENTAIRE */}
             {isGameTested(selectedGame.id) ? (
               <div className="bg-green-50 border border-green-100 p-6 rounded-3xl mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-xs font-black uppercase text-green-700 tracking-wider">Ton avis sur ce jeu</h4>
+                  <h4 className="text-xs font-black uppercase text-green-700 tracking-wider">Ton avis</h4>
                   <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button 
-                        key={star} 
-                        onClick={() => updateReview(selectedGame.id, star, tested.find(t => t.id === selectedGame.id)?.comment || '')}
-                      >
-                        <Star 
-                          size={20} 
-                          fill={star <= (tested.find(t => t.id === selectedGame.id)?.rating || 0) ? "#16a34a" : "none"} 
-                          className={star <= (tested.find(t => t.id === selectedGame.id)?.rating || 0) ? "text-green-600" : "text-green-200"}
-                        />
-                      </button>
-                    ))}
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const currentReview = tested.find(t => t.id === selectedGame.id);
+                      return (
+                        <button 
+                          key={star} 
+                          onClick={() => updateReview(selectedGame.id, star, currentReview?.comment || '')}
+                        >
+                          <Star 
+                            size={22} 
+                            fill={star <= (currentReview?.rating || 0) ? "#16a34a" : "none"} 
+                            className={star <= (currentReview?.rating || 0) ? "text-green-600" : "text-green-200"}
+                          />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 <textarea 
                   placeholder="Commentaire libre (stratégie, ambiance, déception...)"
-                  className="w-full bg-white border border-green-200 rounded-2xl p-3 text-xs outline-none focus:ring-2 ring-green-500/20 h-20 resize-none"
+                  className="w-full bg-white border border-green-200 rounded-2xl p-4 text-xs outline-none focus:ring-2 ring-green-500/20 h-24 resize-none"
                   value={tested.find(t => t.id === selectedGame.id)?.comment || ''}
                   onChange={(e) => updateReview(selectedGame.id, tested.find(t => t.id === selectedGame.id)?.rating || 0, e.target.value)}
                 />
@@ -308,7 +322,7 @@ const App = () => {
             ) : (
               <button 
                 onClick={() => toggleTested(selectedGame.id)}
-                className="w-full mb-8 bg-slate-100 text-slate-500 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-green-600 hover:text-white transition-all"
+                className="w-full mb-8 bg-slate-100 text-slate-500 py-4 rounded-2xl text-[10px] font-black uppercase hover:bg-green-600 hover:text-white transition-all shadow-sm"
               >
                 Marquer comme testé pour noter
               </button>
