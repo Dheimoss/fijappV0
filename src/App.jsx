@@ -3,7 +3,7 @@ import { initialGames } from './gamesData';
 import { 
   Heart, MapPin, Trophy, Search, 
   Package, CheckCircle2, ExternalLink, 
-  Clock, Users, X, Plus, BookOpen, Dices, Share2
+  Clock, Users, X, Plus, BookOpen, Dices, Share2, Star
 } from 'lucide-react';
 
 const App = () => {
@@ -19,11 +19,13 @@ const App = () => {
     return JSON.parse(localStorage.getItem('fij2026_favorites') || '[]');
   });
   
+  // Modification : tested stocke maintenant des objets {id, rating, comment}
   const [tested, setTested] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     const sharedTest = params.get('test');
     if (sharedTest && sharedTest.trim() !== "") {
-      const parsed = sharedTest.split(',').map(Number);
+      // Pour le partage simple, on garde les IDs
+      const parsed = sharedTest.split(',').map(id => ({ id: Number(id), rating: 0, comment: '' }));
       localStorage.setItem('fij2026_tested', JSON.stringify(parsed));
       return parsed;
     }
@@ -69,17 +71,26 @@ const App = () => {
 
   const toggleFavorite = (id) => setFavorites(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   
+  // Helper pour vérifier si un jeu est testé
+  const isGameTested = (id) => tested.some(t => t.id === id);
+
   const toggleTested = (id) => {
     setTested(prev => {
-      if (prev.includes(id)) return prev.filter(i => i !== id);
-      setFavorites(f => f.filter(i => i !== id));
-      return [...prev, id];
+      if (isGameTested(id)) return prev.filter(t => t.id !== id);
+      setFavorites(f => f.filter(fid => fid !== id));
+      return [...prev, { id, rating: 0, comment: '' }];
     });
+  };
+
+  // Nouvelle fonction pour mettre à jour note et commentaire
+  const updateReview = (id, rating, comment) => {
+    setTested(prev => prev.map(t => t.id === id ? { ...t, rating, comment } : t));
   };
 
   const shareMyList = () => {
     const baseUrl = window.location.href.split('?')[0];
-    const shareUrl = `${baseUrl}?favs=${favorites.join(',')}&test=${tested.join(',')}`;
+    const testIds = tested.map(t => t.id);
+    const shareUrl = `${baseUrl}?favs=${favorites.join(',')}&test=${testIds.join(',')}`;
     if (navigator.share) {
       navigator.share({ title: 'Ma liste FIJ 2026', url: shareUrl });
     } else {
@@ -101,6 +112,7 @@ const App = () => {
   const displayData = useMemo(() => {
     const term = normalize(searchTerm);
     const activeFilter = normalize(filterType);
+    const testedIds = tested.map(t => t.id);
     
     const baseFiltered = allGames.filter(g => {
       const matchSearch = normalize(g.title).includes(term) || normalize(g.publisher).includes(term) || normalize(g.author).includes(term) || normalize(g.stand).includes(term);
@@ -110,14 +122,14 @@ const App = () => {
 
     const counts = {
       mylist: baseFiltered.filter(g => favorites.includes(g.id)).length,
-      tested: baseFiltered.filter(g => tested.includes(g.id)).length,
+      tested: baseFiltered.filter(g => testedIds.includes(g.id)).length,
       all: baseFiltered.length,
       asdor: baseFiltered.filter(g => normalize(g.category).includes("as d'or")).length
     };
 
     const finalItems = baseFiltered.filter(g => {
       if (activeTab === 'mylist') return favorites.includes(g.id);
-      if (activeTab === 'tested') return tested.includes(g.id);
+      if (activeTab === 'tested') return testedIds.includes(g.id);
       if (activeTab === 'asdor') return normalize(g.category).includes("as d'or");
       return true;
     });
@@ -164,7 +176,7 @@ const App = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {displayData.finalItems.map(game => (
-            <div key={game.id} onClick={() => setSelectedGame(game)} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col hover:shadow-xl transition-all cursor-pointer group ${tested.includes(game.id) ? 'bg-green-50/50 border-green-200' : 'border-slate-100'}`}>
+            <div key={game.id} onClick={() => setSelectedGame(game)} className={`bg-white rounded-[1.5rem] border p-5 flex flex-col hover:shadow-xl transition-all cursor-pointer group ${isGameTested(game.id) ? 'bg-green-50/50 border-green-200' : 'border-slate-100'}`}>
               <div className="flex justify-between mb-1">
                 <h3 className="font-black text-lg leading-tight flex-1 group-hover:text-indigo-600">{game.title}</h3>
                 <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id); }} className={`ml-2 transition-transform active:scale-125 ${favorites.includes(game.id) ? 'text-red-500' : 'text-slate-300'}`}>
@@ -174,17 +186,26 @@ const App = () => {
               <div className="flex items-center gap-3 text-slate-400 mb-3 font-bold text-[10px]">
                 <div className="flex items-center gap-1"><Users size={12} /><span>{game.players}</span></div>
                 <div className="flex items-center gap-1"><Clock size={12} /><span>{game.duration}</span></div>
-                {/* ICI ON MET LE TYPE EN INDIGO PLUTÔT QUE LA CATÉGORIE */}
                 <div className="ml-auto text-[9px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded uppercase">{game.type}</div>
               </div>
               <p className="text-slate-500 text-[11px] italic mb-4 line-clamp-2 leading-relaxed">"{game.description}"</p>
+              
+              {/* Affichage rapide de la note si testé */}
+              {isGameTested(game.id) && tested.find(t => t.id === game.id)?.rating > 0 && (
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} size={10} fill={i < tested.find(t => t.id === game.id).rating ? "#16a34a" : "none"} className={i < tested.find(t => t.id === game.id).rating ? "text-green-600" : "text-green-200"} />
+                  ))}
+                </div>
+              )}
+
               <div className="mt-auto pt-3 border-t flex justify-between items-center gap-2">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <div className="flex-shrink-0 bg-indigo-600 text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-sm">{game.stand}</div>
                   <span className="text-[10px] font-black uppercase text-slate-400 truncate">{game.publisher}</span>
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); toggleTested(game.id); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all flex-shrink-0 whitespace-nowrap ${tested.includes(game.id) ? 'bg-green-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
-                  {tested.includes(game.id) ? 'Fait !' : 'On a test'} <CheckCircle2 size={12} className="flex-shrink-0" />
+                <button onClick={(e) => { e.stopPropagation(); toggleTested(game.id); }} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all flex-shrink-0 whitespace-nowrap ${isGameTested(game.id) ? 'bg-green-600 text-white shadow-md' : 'bg-slate-100 text-slate-400 hover:bg-slate-200'}`}>
+                  {isGameTested(game.id) ? 'Fait !' : 'On a test'} <CheckCircle2 size={12} className="flex-shrink-0" />
                 </button>
               </div>
             </div>
@@ -192,7 +213,7 @@ const App = () => {
         </div>
       </main>
 
-      {/* MODALE AJOUT JEU */}
+      {/* MODALE AJOUT JEU (Inchangée) */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-indigo-950/60 backdrop-blur-sm overflow-y-auto">
           <div className="bg-white w-full max-w-md rounded-[2rem] p-6 shadow-2xl animate-in zoom-in-95 my-auto">
@@ -226,10 +247,10 @@ const App = () => {
         </div>
       )}
 
-      {/* MODALE DÉTAILS */}
+      {/* MODALE DÉTAILS AVEC NOTES */}
       {selectedGame && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-indigo-950/60 backdrop-blur-sm animate-in fade-in" onClick={() => setSelectedGame(null)}>
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 relative animate-in zoom-in-95 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 relative animate-in zoom-in-95 shadow-2xl overflow-y-auto max-h-[95vh]" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-6 text-left">
               <div>
                 <span className="bg-indigo-50 text-indigo-600 text-[10px] font-black px-3 py-1 rounded-full uppercase mb-2 inline-block">{selectedGame.category}</span>
@@ -245,15 +266,54 @@ const App = () => {
                 </button>
               </div>
             </div>
+
             <div className="grid grid-cols-3 gap-2 mb-6 text-center text-[10px] font-black">
               <div className="bg-slate-50 p-3 rounded-2xl border"><Users size={16} className="mx-auto mb-1 text-indigo-600"/>{selectedGame.players || "?"} j.</div>
               <div className="bg-slate-50 p-3 rounded-2xl border"><Clock size={16} className="mx-auto mb-1 text-indigo-600"/>{selectedGame.duration || "?"}</div>
               <div className="bg-amber-50 p-3 rounded-2xl border border-amber-100 text-amber-700 uppercase"><MapPin size={16} className="mx-auto mb-1 text-amber-600"/>{selectedGame.stand || "?"}</div>
             </div>
-            <div className="bg-slate-50 p-5 rounded-3xl mb-8 relative border shadow-inner text-sm text-slate-700 leading-relaxed max-h-56 overflow-y-auto italic">
+
+            <div className="bg-slate-50 p-5 rounded-3xl mb-6 relative border shadow-inner text-sm text-slate-700 leading-relaxed italic">
               <BookOpen size={20} className="absolute -top-2 -right-2 text-indigo-600 bg-white rounded-full p-1 shadow-sm border" />
               {selectedGame.longDescription || selectedGame.description || "Pas de description."}
             </div>
+
+            {/* SECTION REVIEW - Visible si le jeu est testé */}
+            {isGameTested(selectedGame.id) ? (
+              <div className="bg-green-50 border border-green-100 p-6 rounded-3xl mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-xs font-black uppercase text-green-700 tracking-wider">Ton avis sur ce jeu</h4>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button 
+                        key={star} 
+                        onClick={() => updateReview(selectedGame.id, star, tested.find(t => t.id === selectedGame.id)?.comment || '')}
+                      >
+                        <Star 
+                          size={20} 
+                          fill={star <= (tested.find(t => t.id === selectedGame.id)?.rating || 0) ? "#16a34a" : "none"} 
+                          className={star <= (tested.find(t => t.id === selectedGame.id)?.rating || 0) ? "text-green-600" : "text-green-200"}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <textarea 
+                  placeholder="Commentaire libre (stratégie, ambiance, déception...)"
+                  className="w-full bg-white border border-green-200 rounded-2xl p-3 text-xs outline-none focus:ring-2 ring-green-500/20 h-20 resize-none"
+                  value={tested.find(t => t.id === selectedGame.id)?.comment || ''}
+                  onChange={(e) => updateReview(selectedGame.id, tested.find(t => t.id === selectedGame.id)?.rating || 0, e.target.value)}
+                />
+              </div>
+            ) : (
+              <button 
+                onClick={() => toggleTested(selectedGame.id)}
+                className="w-full mb-8 bg-slate-100 text-slate-500 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-green-600 hover:text-white transition-all"
+              >
+                Marquer comme testé pour noter
+              </button>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <a href={selectedGame.myludoUrl || `https://www.myludo.fr/#!/search/${selectedGame.title}`} target="_blank" rel="noreferrer" className="bg-[#364958] text-white py-4 rounded-2xl text-[10px] font-black text-center uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all"><ExternalLink size={14}/> MyLudo</a>
               <a href={selectedGame.bggUrl || `https://boardgamegeek.com/geeksearch.php?action=search&objecttype=boardgame&q=${selectedGame.title}`} target="_blank" rel="noreferrer" className="bg-[#FF5100] text-white py-4 rounded-2xl text-[10px] font-black text-center uppercase tracking-widest flex items-center justify-center gap-2 hover:opacity-90 active:scale-95 transition-all"><ExternalLink size={14}/> BGG</a>
